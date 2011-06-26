@@ -10,13 +10,16 @@ public class SgSim {
         seed.addKey(0);
         Node start = null;
         int searchKey = 1;
-        int startKey = 800;
+        int startKey = 8900;
         
-        for (int i = 1000; i > 0; i--) {
+        for (int i = 10000; i > 0; i--) {
             Node n = new Node(trans, seed.id);
             n.addKey(i);
             if (i == startKey) {
                 start = n;
+            }
+            if (i % 1000 == 0) {
+                System.out.println(i);
             }
         }
         //System.out.println("--- dump ---");
@@ -28,5 +31,6 @@ public class SgSim {
         //System.out.println("--- dump ---");
         //trans.dump();
         trans.fin();
+        System.out.println("Erapsed: " + trans.getElapsedTime() + "ms");
     }
 }

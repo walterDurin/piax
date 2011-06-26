@@ -115,6 +115,10 @@ public class SimTransport implements Runnable {
         queue.add(endMessage());
     }
     
+    public long getElapsedTime() {
+        return new Date().getTime() - startTime.getTime();
+    }
+    
     class ReceiverThread implements Runnable {
         Node node;
         Message mes;
