@@ -10,60 +10,77 @@ import java.util.HashMap;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import org.piax.ov.Node;
+import org.piax.ov.OverlayManager;
 import org.piax.ov.common.KeyComparator;
 import org.piax.trans.common.Id;
 
-public class SimTransport implements Runnable {
-    HashMap<Id,Node> nodeMap;
-    BlockingQueue<Message> queue;
+public class SimTransport implements Transport,Runnable {
+    HashMap<Id,OverlayManager> nodeMap;
+    BlockingQueue<TransPack> queue;
+    
+    static public enum Param {
+       NestedWait 
+    };
+    
     // 
     public boolean nestedWait = true;
     //Id id;
     Thread t;
     int ID_LENGTH = 16;
 
-    class Pair {
+    class Monitor {
+        Id id;
         ResponseChecker checker;
         Object lock;
-        public Pair(ResponseChecker checker, Object lock) {
+        public TransPack receivedMessage;
+        public Monitor(Id id, ResponseChecker checker, Object lock) {
+            this.id = id;
             this.checker = checker;
             this.lock = lock;
+            this.receivedMessage = null;
         }
     }
-    ArrayList<Pair> waits;
+    ArrayList<Monitor> waits;
     Date startTime;
 
-    private Message endMessage() {
-        return new Message(null, null, null);
+    private TransPack endMessage() {
+        return new TransPack(null, null, null);
     }
     
-    private boolean isEndMessage(Message mes) {
-        return mes.to == null;
+    private boolean isEndMessage(TransPack mes) {
+        return mes.receiver == null;
     }
 
     public SimTransport() {
         //id = Id.newId(ID_LENGTH);
-        queue = new LinkedBlockingQueue<Message>();
-        nodeMap = new HashMap<Id,Node> ();
-        waits = new ArrayList<Pair>();
+        queue = new LinkedBlockingQueue<TransPack>();
+        nodeMap = new HashMap<Id,OverlayManager> ();
+        waits = new ArrayList<Monitor>();
         startTime = new Date();
         t = new Thread(this);
         t.start();
-
     }
-    public void addReceiveListener(Node node) {
-        nodeMap.put(node.id, node);
+    
+    public void setParameter(Object key, Object value) {
+        if (key == Param.NestedWait) {
+            nestedWait = ((Boolean)value).booleanValue();
+        }
+    }
+    
+    public void addReceiveListener(ReceiveListener listener) {
+        // this is a trick to support each listener. Only applicable for ov.OverlayManager
+        nodeMap.put(((OverlayManager)listener).id, (OverlayManager)listener);
+        
     }
     public Id getId() {
-        // This is the trick to mimic node's transport.
+        // This is a trick to mimic node's transport.
         return Id.newId(ID_LENGTH);
     }
     
-    Pair getWait(Message mes) {
-        Pair p = null;
-        for (Pair pair : waits) {
-            if (pair.checker.isWaitingFor(mes)) {
+    Monitor getWait(TransPack mes) {
+        Monitor p = null;
+        for (Monitor pair : waits) {
+            if (pair.checker.isWaitingFor(mes.body)) {
                 p = pair;
                 break;
             }
@@ -76,22 +93,34 @@ public class SimTransport implements Runnable {
 
     public void run() {
         while(true) {
-            Message message = null;
+            TransPack tp = null;
             try {
-                message = queue.take();
+                tp = queue.take();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            if (message != null) {
-                if (isEndMessage(message)) {
+            if (tp != null) {
+                if (isEndMessage(tp)) {
+                    System.out.println("END");
                     break;
                 }
-                Node node = nodeMap.get(message.to);
-                Pair pair = getWait(message);
-                if (pair != null) {
-                    synchronized(pair.lock) {
-                        node.receivedMessage = message;
-                        pair.lock.notify();
+                OverlayManager node = nodeMap.get(tp.receiver.getId());
+                
+                // replace self of remote node accessor
+                for (Object key : tp.body.keySet()) {
+                    Object value = tp.body.get(key);
+                    if (value instanceof Node) {
+                        ((Node)value).self = node.getNode(); 
+                    }
+                }
+                tp.sender.self = node.getNode();
+                // tp.receiver.self = node;
+                
+                Monitor monotor = getWait(tp);
+                if (monotor != null) {
+                    synchronized(monotor.lock) {
+                        monotor.receivedMessage = tp;
+                        monotor.lock.notify();
                     }
                     Thread.yield();
                 }
@@ -99,11 +128,11 @@ public class SimTransport implements Runnable {
                     // for better performance...
                     // if it will use sync method in onReceive method, it must start receiver thread. 
                     if (nestedWait) {
-                        new Thread(new ReceiverThread(node, message)).start();
+                        new Thread(new ReceiverThread(node, tp)).start();
                     }
                     else {
-                        node.receivedMessage = message;
-                        node.onReceive(message);
+                        // node.receivedMessage = tp;
+                        node.onReceive(tp.sender, tp.body);
                         Thread.yield();
                     }
                 }
@@ -120,70 +149,58 @@ public class SimTransport implements Runnable {
     }
     
     class ReceiverThread implements Runnable {
-        Node node;
-        Message mes;
+        OverlayManager node;
+        TransPack mes;
         
-        public ReceiverThread(Node node, Message mes) {
+        public ReceiverThread(OverlayManager node, TransPack mes) {
             this.node = node;
             this.mes = mes;
         }
         public void run() {
-            node.receivedMessage = mes;
-            node.onReceive(mes);
+            //node.receivedMessage = mes;
+            node.onReceive(mes.sender, mes.body);
         }
     }
     
-    void addWait(ResponseChecker checker, Object lock) {
-        waits.add(new Pair(checker, lock));
+    public Node getNode(OverlayManager ov, OverlayManager targetOv) {
+        Node ret = targetOv.getNode();
+        ret.self = ov.getNode();
+        return ret;
+    }
+    
+    Monitor addWait(Id id, ResponseChecker checker, Object lock) {
+        Monitor ret = new Monitor(id, checker, lock);
+        waits.add(ret);
+        return ret;
     }
 
-    public Message sendAndWait(Message mes, ResponseChecker checker) throws IOException {
-        Node node = nodeMap.get(mes.from);
+    public TransPack sendAndWait(TransPack pack, ResponseChecker checker) throws IOException {
         Object lock = new Object();
-        addWait(checker, lock);
+        Monitor pair = addWait(pack.sender.getId(), checker, lock);
         synchronized(lock) {
             try {
-                queue.add(mes);
-                node.isWaiting = true;
-                node.receivedMessage = null;
+                queue.add(pack);
                 lock.wait();
                 Thread.yield();
             } catch (InterruptedException e) {
                 throw new IOException("interrupted");
             }
         }
-        node.isWaiting = false;
-        Message received = node.receivedMessage;
+        TransPack received = pair.receivedMessage;
         if (received == null) {
             System.err.println("timed out receiving.");
         }
         return received;
     }
 
-    public void send(Message mes) {
-        queue.add(mes);
+    public void send(TransPack pack) {
+        queue.add(pack);
         Thread.yield();
-    }
-    
-    // these methods should be strictly implemented.
-    public Comparable<?> getKey(Id target) {
-        Node node = nodeMap.get(target);
-        return node.sg.getKey();
-    }
-
-    public int getMaxLevelOp(Id target) {
-        Node node = nodeMap.get(target);
-        return node.sg.getMaxLevel();
-    }
-
-    public Id getNeighborOp(Id target, int side, int level) {
-        Node node = nodeMap.get(target);
-        return node.sg.getNeighborOp(side, level);
     }
     
     public class NodeComparator implements Comparator {  
         public int compare(Object arg0, Object arg1) {  
-            return KeyComparator.getInstance().compare(nodeMap.get((Id)arg0).sg.key,nodeMap.get((Id)arg1).sg.key);
+            return KeyComparator.getInstance().compare(nodeMap.get((Id)arg0).getKey(), nodeMap.get((Id)arg1).getKey());
         }  
     }
     
@@ -197,13 +214,8 @@ public class SimTransport implements Runnable {
         
         for (Object obj : o) {
             Id id = (Id) obj;
-            Node node = nodeMap.get(id);
-            String s = "";
-            s += "ID=" + node.id + (node.sg.deleteFlag? "(DELETED)" : "") + "\n";
-            s += "Key=" + node.sg.getKey() + "\n";
-            s += "MV=" + node.sg.m.toString() + "\n";
-            s += "Table:" + node.sg.neighbors.toString() + "\n";
-            System.out.println(s);
+            OverlayManager ov = nodeMap.get(id);
+            System.out.println(ov.o.toString());
         }
 
     }
@@ -220,11 +232,10 @@ public class SimTransport implements Runnable {
         
         for (Object obj : o) {
             Id id = (Id) obj;
-            Node node = nodeMap.get(id);
-            sb.append("ID=" + node.id + "\n");
-            sb.append("Key=" + node.sg.getKey() + "\n");
-            sb.append("MV=" + node.sg.m.toString() + "\n");
-            sb.append("Table:" + node.sg.neighbors.toString() + "\n");
+            OverlayManager ov = nodeMap.get(id);
+            sb.append("ID=" + ov.id + "\n");
+            sb.append("Key=" + ov.getKey() + "\n");
+            sb.append("MV=" + ov.o.toString() + "\n");
         }
         return sb.toString();
     }
