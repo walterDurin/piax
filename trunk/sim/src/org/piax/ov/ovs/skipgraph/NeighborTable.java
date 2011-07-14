@@ -2,34 +2,39 @@ package org.piax.ov.ovs.skipgraph;
 
 import java.util.ArrayList;
 
+import org.piax.ov.OverlayManager;
+import org.piax.trans.Node;
 import org.piax.trans.common.Id;
 
 public class NeighborTable {
-    ArrayList<KeyCell> skipTable;
+    
+    class LevelPair {
+        public Node left;
+        public Node right;
+    }
+    
+    ArrayList<LevelPair> skipTable;
     Comparable<?> key;
     public NeighborTable (Comparable<?> key) {
         this.key = key;
-        skipTable = new ArrayList<KeyCell>();
+        skipTable = new ArrayList<LevelPair>();
     }
-    public void put(int side, int level, Id id, Comparable<?> key) {
+    public void put(int side, int level, Node node) {
         for (int i = level + 1; i > skipTable.size(); i--) {
-            KeyCell kc = new KeyCell();
+            LevelPair kc = new LevelPair();
             kc.left = kc.right = null;
-            kc.leftKey = kc.rightKey = null;
             skipTable.add(kc);
         }
-        KeyCell kc = skipTable.get(level);
+        LevelPair kc = skipTable.get(level);
         if (side == SkipGraph.R) {
-            kc.right = id;
-            kc.rightKey = key;
+            kc.right = node;
         }
         else {
-            kc.left = id;
-            kc.leftKey = key;
+            kc.left = node;
         }
     }
 
-    public Id get(int side, int level) {
+    public Node get(int side, int level) {
         if (skipTable.size() < level + 1) {
             return null;
         }
@@ -46,19 +51,25 @@ public class NeighborTable {
             return null;
         }
         if (side == SkipGraph.R) {
-            return skipTable.get(level).rightKey;
+            if (skipTable.get(level).right == null) {
+                return null;
+            }
+            return (Comparable<?>)skipTable.get(level).right.getAttr(OverlayManager.KEY);
         }
         else {
-            return skipTable.get(level).leftKey;
+            if (skipTable.get(level).left == null) {
+                return null;
+            }
+            return (Comparable<?>)skipTable.get(level).left.getAttr(OverlayManager.KEY);
         }
     }
     
     public String toString() {
         String ret = "";
         for (int i = skipTable.size() - 1; i >= 0; i--) {
-            KeyCell kc = skipTable.get(i);
+            LevelPair kc = skipTable.get(i);
             //ret += kc.left + "<-" + i + "->" + kc.right + "\n";
-            ret += kc.leftKey + "<-(" + i + ")-->" + kc.rightKey + "\n";
+            ret += kc.left + "<-(" + i + ")-->" + kc.right + "\n";
         }
         return ret;
     }

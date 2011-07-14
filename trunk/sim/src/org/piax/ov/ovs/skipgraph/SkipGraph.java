@@ -1,35 +1,46 @@
+// Pure Skip Graph implementation.
 package org.piax.ov.ovs.skipgraph;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
+import org.piax.ov.Overlay;
+import org.piax.ov.OverlayManager;
 import org.piax.ov.common.KeyComparator;
-import org.piax.trans.Message;
+import org.piax.trans.Node;
 import org.piax.trans.ResponseChecker;
 import org.piax.trans.SimTransport;
 import org.piax.trans.common.Id;
 
 import static org.piax.trans.Literals.map;
 
-public class SkipGraph {
-public    Comparable<?> key;   // Key
-    Id id;               // Node Id
-public    MembershipVector m;  // Membership vector
-    SimTransport trans;
+public class SkipGraph implements Overlay {
+
+    public MembershipVector m;  // Membership vector
+    public Node self;
+
+    // For faster access;
+    public Id id;               // Node Id
+    public Comparable<?> key;   // Key
+    
+    //Transport trans;
 
     public NeighborTable neighbors;
     public boolean deleteFlag;
 
     static public enum Op {
-        SEARCH, FOUND, NOT_FOUND, NEIGHBOR, BUDDY, GET_LINK, SET_LINK,
-        DELETE, CONFIRM_DELETE, NO_NEIGHBOR, SET_NEIGHBOR_NIL,
+        SEARCH, FOUND, NOT_FOUND, NEIGHBOR, BUDDY, 
+        GET_MAX_LEVEL, RET_MAX_LEVEL,
+        GET_NEIGHBOR, RET_NEIGHBOR,
+        GET_LINK, SET_LINK, 
+        DELETE, CONFIRM_DELETE,
+        NO_NEIGHBOR, SET_NEIGHBOR_NIL,
         FIND_NEIGHBOR, FOUND_NEIGHBOR
     }
     
     static public enum Arg {
-        OP, SIDE, OTHER_SIDE, SIDE_NEIGHBOR_ID, ID, KEY, LEVEL,
-        OTHER_SIDE_NEIGHBOR_ID, NEW_NEIGHBOR_ID, NEW_NEIGHBOR_KEY, VAL,
-        FOUND_ID, SENDER_ID, FOUND_KEY, SENDER_KEY
+        OP, SIDE, LEVEL, NODE, VAL
     }
     
     static final public int R = 0;
@@ -37,42 +48,38 @@ public    MembershipVector m;  // Membership vector
     
     class SearchResult {
         public Op result;
-        public Id foundId;
+        public Node node;
     }
 
     private SearchResult searchResult;
     
     class CheckOp implements ResponseChecker {
-        Id id;
         Op op;
         Op op2;
-        public CheckOp(Id id, Op op) {
-            this.id = id;
+        public CheckOp(Op op) {
             this.op = op;
             this.op2 = null;
         }
         
-        public CheckOp(Id id, Op op, Op op2) {
-            this.id = id;
+        public CheckOp(Op op, Op op2) {
             this.op = op;
             this.op2 = op2;
         }
         @Override
-        public boolean isWaitingFor(Message message) {
+        public boolean isWaitingFor(Map<Object,Object> mes) {
             if (op2 == null) {
-                return (message.to.equals(id) && message.args.get(Arg.OP) == op);
+                return mes.get(Arg.OP) == op;
             }
             else {
-                return (message.to.equals(id) && (message.args.get(Arg.OP) == op || message.args.get(Arg.OP) == op2));
+                return (mes.get(Arg.OP) == op || mes.get(Arg.OP) == op2);
             }
         }
-        
     }
      
-    public SkipGraph(SimTransport trans, Id id, Comparable<?> key) {
-        this.trans = trans;
-        this.id = id;
-        this.key = key;
+    public SkipGraph(Node self) {
+        this.self = self;
+        this.id = self.getId();
+        this.key = (Comparable<?>)self.getAttr(OverlayManager.KEY);
         this.m = new MembershipVector();
         neighbors = new NeighborTable(key);
     }
@@ -82,151 +89,193 @@ public    MembershipVector m;  // Membership vector
     public Comparable<?> getKey() {
         return key;
     }
+    
+    public Comparable<?> getKey(Node n) {
+        return (Comparable<?>)n.getAttr(OverlayManager.KEY);
+    }
 
-    public Id getNeighborOp(int side, int l) {
-        Id nid = neighbors.get(side, l);
-        if (nid == null) {
-            return id; 
+    public Node getNeighbor(int side, int l) {
+        Node n = neighbors.get(side, l);
+        if (n == null) {
+            return self; 
         }
         else {
-            return nid;
+            return n;
         }
     }
 
-    public Map<Arg,Object> sendAndWait(Map<Arg,Object> message, Id to, Op op) throws IOException {
-        Message ret = trans.sendAndWait(new Message(to, id, message), new CheckOp(id, op));
-        return ret.args;
+    @SuppressWarnings("unchecked")
+    private List<Id> getVia(Map<Object,Object>args) {
+        return (List<Id>)args.get(Node.VIA);
     }
     
-    public Map<Arg,Object> sendAndWait(Map<Arg,Object> message, Id to, Op op, Op op2) throws IOException {
-        Message ret = trans.sendAndWait(new Message(to, id, message), new CheckOp(id, op, op2));
-        return ret.args;
+    private Map<Object,Object> setVia(Map<Object,Object>args, List<Id> via) {
+        args.put(Node.VIA, via);
+        return args;
     }
     
-    public void onReceiveSearchResult(Message mes) {
-        Map<Arg,Object> arg = mes.args;
+    public void onReceiveSearchResult(Node sender, Map<Object,Object> arg) {
         searchResult.result = (Op) arg.get(Arg.OP);
-        System.out.println("search hops =" + mes.via.size());
+        List<Id> via = getVia(arg);
+        System.out.println("search hops =" + (via == null ? 0 : via.size()));
         if (searchResult.result == Op.FOUND){
-            searchResult.foundId = (Id) arg.get(Arg.FOUND_ID);
+            searchResult.node = (Node) arg.get(Arg.NODE);
         }
         else {
-            searchResult.foundId = (Id) arg.get(Arg.OTHER_SIDE_NEIGHBOR_ID);
+            searchResult.node = (Node) arg.get(Arg.NODE);
         }
         synchronized(searchResult) {
             searchResult.notify();
         }
     }
 
-    public void onReceive(Message mes) {
-        Map<Arg,Object> message = mes.args;
-        Op op = (Op)message.get(Arg.OP);
+    public void onReceive(Node sender, Map<Object,Object> mes) {
+        Op op = (Op)mes.get(Arg.OP);
         if (op == Op.SEARCH) {
-            onReceiveSearchOp(mes);
+            onReceiveSearchOp(sender, mes);
         }
         else if (op == Op.BUDDY) {
-            onReceiveBuddyOp(mes);
+            onReceiveBuddyOp(sender, mes);
         }
         else if (op == Op.FOUND){
-            onReceiveSearchResult(mes);
+            onReceiveSearchResult(sender, mes);
         }
         else if (op == Op.GET_LINK){
-            onReceiveGetLinkOp(mes);
+            onReceiveGetLinkOp(sender, mes);
         }
         else if (op == Op.NOT_FOUND) {
-            onReceiveSearchResult(mes);
+            onReceiveSearchResult(sender, mes);
         }
         else if (op == Op.DELETE) {
-            onReceiveDeleteOp(mes);
+            onReceiveDeleteOp(sender, mes);
         }
         else if (op == Op.FIND_NEIGHBOR) {
-            onReceiveFindNeighborOp(mes);
+            onReceiveFindNeighborOp(sender, mes);
         }
         else if (op == Op.SET_NEIGHBOR_NIL) {
-            onReceiveSetNeighborNilOp(mes);
+            onReceiveSetNeighborNilOp(sender, mes);
+        }
+        else if (op == Op.GET_MAX_LEVEL) {
+            onReceiveGetMaxLevelOp(sender, mes);
+        }
+        else if (op == Op.GET_NEIGHBOR) {
+            onReceiveGetNeighborOp(sender, mes);
         }
     }
 
-    Message updateMessage(Message received, Map a, Id to) {
-        return new Message(to, id, a, received.via);
+    Map<Object,Object> inheritVia(Map<Object,Object> message, List<Id> via) {
+        setVia(message, via);
+        return message;
     }
     
-    Message newMessage(Map a, Id to) {
-        return new Message(to, id, a);
-    }
-
     int compare(Comparable<?> a, Comparable<?>b) {
         return KeyComparator.getInstance().compare(a, b);
     }
 
-    private Map<Arg,Object> searchOp(Id id, Comparable<?> key, int level) {
-        return map(Arg.OP, (Object)Op.SEARCH).map(Arg.ID, id).map(Arg.KEY, key).map(Arg.LEVEL, level);
+    private Map<Object,Object> searchOp(Node startNode, Comparable<?> searchKey, int level) {
+        return map((Object)Arg.OP, (Object)Op.SEARCH).map(Arg.NODE, startNode).map(OverlayManager.KEY, searchKey).map(Arg.LEVEL, level);
     }
     
-    private Map<Arg,Object> foundOp(Id id) {
-        return map(Arg.OP, (Object)Op.FOUND).map(Arg.FOUND_ID, id);
+    private Map<Object,Object> foundOp(Node v) {
+        return map((Object)Arg.OP, (Object)Op.FOUND).map(Arg.NODE, v);
     }
 
-    private Map<Arg,Object> notFoundOp(Id id) {
-        return map(Arg.OP, (Object)Op.NOT_FOUND).map(Arg.OTHER_SIDE_NEIGHBOR_ID, id);
+    private Map<Object,Object> notFoundOp(Node v) {
+        return map((Object)Arg.OP, (Object)Op.NOT_FOUND).map(Arg.NODE, v);
+    }
+    
+    private Map<Object,Object> getMaxLevelOp() {
+        return map((Object)Arg.OP, (Object)Op.GET_MAX_LEVEL);
+    }
+    
+    private Map<Object,Object> retMaxLevelOp(int level) {
+        return map((Object)Arg.OP, (Object)Op.RET_MAX_LEVEL).map(Arg.LEVEL, level);
+    }
+    
+    private Map<Object,Object> getNeighborOp(int side, int level) {
+        return map((Object)Arg.OP, (Object)Op.GET_NEIGHBOR).map(Arg.SIDE, side).map(Arg.LEVEL, level);
+    }
+    
+    private Map<Object,Object> retNeighborOp(Node vsidel) {
+        return map((Object)Arg.OP, (Object)Op.RET_NEIGHBOR).map(Arg.NODE, vsidel);
     }
 
-    private Map<Arg,Object> getLinkOp(Id u, int side, int level) {
-        return map(Arg.OP, (Object)Op.GET_LINK).map(Arg.ID, u).map(Arg.SIDE, side).map(Arg.LEVEL, level);
+    private Map<Object,Object> getLinkOp(Node u, int side, int level) {
+        return map((Object)Arg.OP, (Object)Op.GET_LINK).map(Arg.NODE, u).map(Arg.SIDE, side).map(Arg.LEVEL, level);
     }
 
-    private Map<Arg,Object> setLinkOp(Id newNeighborId, Comparable<?> newNeighborKey, int level) {
-        return map(Arg.OP, (Object)Op.SET_LINK).map(Arg.NEW_NEIGHBOR_ID,newNeighborId).map(Arg.NEW_NEIGHBOR_KEY,newNeighborKey).map(Arg.LEVEL,level);
+    private Map<Object,Object> setLinkOp(Node node, int level) {
+        return map((Object)Arg.OP, (Object)Op.SET_LINK).map(Arg.NODE, node).map(Arg.LEVEL,level);
     }
 
-    private Map<Arg,Object> buddyOp(Id id, int level, MembershipVector m, int side) {
-        return map(Arg.OP, (Object)Op.BUDDY).map(Arg.ID, id).map(Arg.LEVEL,level).map(Arg.VAL, m).map(Arg.SIDE, side);
+    private Map<Object,Object> buddyOp(Node node, int level, MembershipVector m, int side) {
+        return map((Object)Arg.OP, (Object)Op.BUDDY).map(Arg.NODE, node).map(Arg.LEVEL,level).map(Arg.VAL, m).map(Arg.SIDE, side);
     }
     
-    private Map<Arg,Object> deleteOp(int level, Id senderId, Comparable<?> senderKey) {
-        return map(Arg.OP, (Object)Op.DELETE).map(Arg.LEVEL, level).map(Arg.SENDER_ID, senderId).map(Arg.SENDER_KEY, senderKey);
+    private Map<Object,Object> deleteOp(int level, Node node) {
+        return map((Object)Arg.OP, (Object)Op.DELETE).map(Arg.LEVEL, level).map(Arg.NODE, node);
     }
     
-    private Map<Arg,Object> confirmDeleteOp(int level) {
-        return map(Arg.OP, (Object)Op.CONFIRM_DELETE).map(Arg.LEVEL, level);
+    private Map<Object,Object> confirmDeleteOp(int level) {
+        return map((Object)Arg.OP, (Object)Op.CONFIRM_DELETE).map(Arg.LEVEL, level);
     }
     
-    private Map<Arg,Object> noNeighborOp(int level) {
-        return map(Arg.OP, (Object)Op.NO_NEIGHBOR).map(Arg.LEVEL, level);
+    private Map<Object,Object> noNeighborOp(int level) {
+        return map((Object)Arg.OP, (Object)Op.NO_NEIGHBOR).map(Arg.LEVEL, level);
     }
     
-    private Map<Arg,Object> setNeighborNilOp(int level, Id senderId) {
-        return map(Arg.OP, (Object)Op.SET_NEIGHBOR_NIL).map(Arg.LEVEL, level).map(Arg.SENDER_ID, senderId);
+    private Map<Object,Object> setNeighborNilOp(int level, Node node) {
+        return map((Object)Arg.OP, (Object)Op.SET_NEIGHBOR_NIL).map(Arg.LEVEL, level).map(Arg.NODE, node);
     }
     
-    private Map<Arg,Object> findNeighborOp(int level, Id senderId, Comparable<?> senderKey) {
-        return map(Arg.OP, (Object)Op.FIND_NEIGHBOR).map(Arg.LEVEL, level).map(Arg.SENDER_ID, senderId).map(Arg.SENDER_KEY, senderKey);
+    private Map<Object,Object> findNeighborOp(int level, Node node) {
+        return map((Object)Arg.OP, (Object)Op.FIND_NEIGHBOR).map(Arg.LEVEL, level).map(Arg.NODE, node);
     }
     
-    private Map<Arg,Object> foundNeighborOp(Id foundId, Comparable<?> foundKey, int level) {
-        return map(Arg.OP, (Object)Op.FOUND_NEIGHBOR).map(Arg.LEVEL, level).map(Arg.FOUND_ID, foundId).map(Arg.FOUND_KEY, foundKey);
+    private Map<Object,Object> foundNeighborOp(Node node, int level) {
+        return map((Object)Arg.OP, (Object)Op.FOUND_NEIGHBOR).map(Arg.LEVEL, level).map(Arg.NODE, node);
     }
-
-    public int getMaxLevel() {
+    
+    private int getMaxLevel() {
         return neighbors.skipTable.size() - 1;
     }
+
+    public void onReceiveGetMaxLevelOp(Node sender, Map<Object, Object> args) {
+        Node u = sender;
+        try {
+            u.send(retMaxLevelOp(getMaxLevel()));
+        } catch (IOException e) {
+            e.printStackTrace();
+        } 
+    }
     
-    public void onReceiveGetLinkOp(Message mes) {
-        Map<Arg, Object> args = mes.args;
-        Id u = (Id) args.get(Arg.ID);
+    public void onReceiveGetNeighborOp(Node sender, Map<Object, Object> args) {
+        Node u = sender;
+        int side = (Integer) args.get(Arg.SIDE);
+        int l = (Integer) args.get(Arg.LEVEL);
+        try {
+            u.send(retNeighborOp(getNeighbor(side, l)));
+        } catch (IOException e) {
+            e.printStackTrace();
+        } 
+    }
+    
+    public void onReceiveGetLinkOp(Node sender, Map<Object, Object> args) {
+        Node u = (Node) args.get(Arg.NODE);
         int side = (int)((Integer)args.get(Arg.SIDE));
         int l = (int)((Integer)args.get(Arg.LEVEL));
         change_neighbor(u, side, l);
     }
 
     // Most of l + 1 were l in the original paper.
-    public void onReceiveBuddyOp(Message mes) {
+    public void onReceiveBuddyOp(Node sender, Map<Object,Object> args) {
         int otherSide;
         
-        Map<Arg, Object> args = mes.args;
-        Id u = (Id) args.get(Arg.ID);
+        Node u = (Node) args.get(Arg.NODE);
         int l = (int)((Integer)args.get(Arg.LEVEL));
         MembershipVector val = (MembershipVector) args.get(Arg.VAL);
+        List<Id> via = getVia(args);
+        
         int side = (int)((Integer)args.get(Arg.SIDE));
         if (side == L) {
             otherSide = R;
@@ -236,25 +285,30 @@ public    MembershipVector m;  // Membership vector
         }
         if (!m.existsElementAt(l + 1)) {
             m.randomElement(l + 1);
-            neighbors.put(L, l + 1, null, null);
-            neighbors.put(R, l + 1, null, null);
+            neighbors.put(L, l + 1, null);
+            neighbors.put(R, l + 1, null);
         }
         if (m.equals(l + 1, val)) {
             change_neighbor(u, side, l + 1);
         }
         else {
-            if (neighbors.get(otherSide, l) != null) {
-                trans.send(updateMessage(mes, buddyOp(u, l, val, side), neighbors.get(otherSide, l)));
+            try {
+                if (neighbors.get(otherSide, l) != null) {
+                    neighbors.get(otherSide, l).send(setVia(buddyOp(u, l, val, side), via));
+                }
+                else {
+                    u.send(setVia(setLinkOp(null, l + 1), via));
+                }
             }
-            else {
-                trans.send(updateMessage(mes, setLinkOp(null, null, l + 1), u));
+            catch (IOException e) {
+                e.printStackTrace();
             }
         }
     }
     
-    private void change_neighbor(Id u, int side, int l) {
+    private void change_neighbor(Node u, int side, int l) {
         Comparable<?> sideKey = neighbors.getKey(side, l);
-        Comparable<?> uKey = trans.getKey(u);
+        Comparable<?> uKey = getKey(u);
         int cmp = 0;
         if (sideKey != null) {
             if (side == R) {
@@ -264,84 +318,90 @@ public    MembershipVector m;  // Membership vector
                 cmp = compare(uKey, sideKey);
             }
         }
-        Id to;
-        Map<Arg,Object> arg;
+        Node to;
+        Map<Object,Object> arg;
         if (cmp < 0) {
             to = neighbors.get(side, l);
             arg = getLinkOp(u, side, l);
         }
         else {
             to = u;
-            arg = setLinkOp(id, key, l);
+            arg = setLinkOp(self, l);
         }
-        trans.send(new Message(to, id, arg));
-        neighbors.put(side, l, u, uKey);
+        try {
+            to.send(arg);
+            neighbors.put(side, l, u);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
-    public void onReceiveSearchOp(Message mes) {
-        Map<Arg, Object> args = mes.args;
-        Id startNodeId = (Id) args.get(Arg.ID);
-        Comparable<?> searchKey = (Comparable<?>) args.get(Arg.KEY);
+    public void onReceiveSearchOp(Node sender, Map<Object,Object> args) {
+        Node startNode = (Node) args.get(Arg.NODE);
+        Comparable<?> searchKey = (Comparable<?>) args.get(OverlayManager.KEY);
         int level = (int)((Integer)args.get(Arg.LEVEL));
-
-        if (compare(key,searchKey) == 0) {
-            trans.send(updateMessage(mes, foundOp(id), startNodeId));
-        }
-        else if (compare(key, searchKey) < 0) {
-            while (level >= 0) {
-                Comparable<?> rightKey = neighbors.getKey(R, level);
-                if (rightKey != null && compare(rightKey, searchKey) <= 0) {
-                    System.out.println(String.format("R: KEY:%4d, LEVEL:%2d, MV:%s", key, level, m.toString()));
-                    trans.send(updateMessage(mes, searchOp(startNodeId, searchKey, level), neighbors.get(R, level)));
-                    break;
-                }
-                else {
-                    level--;
+        List<Id> via = getVia(args);
+        try {
+            if (compare(key,searchKey) == 0) {
+                startNode.send(setVia(foundOp(self), via));
+            }
+            else if (compare(key, searchKey) < 0) {
+                while (level >= 0) {
+                    Comparable<?> rightKey = neighbors.getKey(R, level);
+                    if (rightKey != null && compare(rightKey, searchKey) <= 0) {
+                        System.out.println(String.format("R: KEY:%4d, LEVEL:%2d, MV:%s", key, level, m.toString()));
+                        neighbors.get(R, level).send(setVia(searchOp(startNode, searchKey, level), via));
+                        break;
+                    }
+                    else {
+                        level--;
+                    }
                 }
             }
-        }
-        else {
-            while (level >= 0) {
-                Comparable<?> leftKey = neighbors.getKey(L, level);
-                if (leftKey != null && compare(leftKey, searchKey) >= 0) {
-                    System.out.println(String.format("L: KEY:%4d, LEVEL:%2d, MV:%s", key, level, m.toString()));
-                    trans.send(updateMessage(mes, searchOp(startNodeId, searchKey, level), neighbors.get(L, level)));
-                    break;
-                }
-                else {
-                    level--;
+            else {
+                while (level >= 0) {
+                    Comparable<?> leftKey = neighbors.getKey(L, level);
+                    if (leftKey != null && compare(leftKey, searchKey) >= 0) {
+                        System.out.println(String.format("L: KEY:%4d, LEVEL:%2d, MV:%s", key, level, m.toString()));
+                        neighbors.get(L, level).send(setVia(searchOp(startNode, searchKey, level), via));
+                        break;
+                    }
+                    else {
+                        level--;
+                    }
                 }
             }
+            if (level < 0) {
+                startNode.send(setVia(notFoundOp(self), via));
+            }
         }
-        if (level < 0) {
-            trans.send(updateMessage(mes, notFoundOp(id), startNodeId));
+        catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
-    private void onReceiveDeleteOp(Message mes) {
-        Map<Arg, Object> args = mes.args;
+    private void onReceiveDeleteOp(Node s, Map<Object,Object> args) {
         int l = (int)((Integer)args.get(Arg.LEVEL));
-        Id senderId = (Id)args.get(Arg.SENDER_ID);
-        Comparable<?> senderKey = (Comparable<?>)args.get(Arg.SENDER_KEY);
+        Node sender = (Node)args.get(Arg.NODE);
+        List<Id> via = getVia(args);
         try {
             if (deleteFlag) {
                 if (neighbors.get(R, l) != null) {
-                    trans.send(updateMessage(mes, deleteOp(l, senderId, senderKey), neighbors.get(R, l)));
+                    neighbors.get(R, l).send(setVia(deleteOp(l, sender), via));
                 }
                 else {
-                    trans.send(newMessage(noNeighborOp(l), senderId));
+                    sender.send(noNeighborOp(l));
                 }
             }
             else {
                 if (neighbors.get(L, l) != null) {
                     // original paper claims this is findNeighborOp(l, senderId, senderKey) but foundNeighborOp never arrives to this node.
-                    Map<Arg, Object> sr = sendAndWait(findNeighborOp(l, id, key), neighbors.get(L, l), Op.FOUND_NEIGHBOR);
-                    Id xId = (Id) sr.get(Arg.FOUND_ID);
-                    Comparable<?> xKey = (Comparable<?>) sr.get(Arg.FOUND_KEY);
+                    Map<Object, Object> sr = neighbors.get(L, l).sendAndWait(findNeighborOp(l, self), new CheckOp(Op.FOUND_NEIGHBOR));
+                    Node x = (Node) sr.get(Arg.NODE);
                     int level = (int)((Integer) sr.get(Arg.LEVEL));
-                    System.out.println("update " + key + "'s L :" + neighbors.getKey(L, level) + "-(" + level + ")->" + xKey);
-                    neighbors.put(L, level, xId, xKey);
-                    trans.send(newMessage(confirmDeleteOp(l), senderId));
+                    System.out.println("update " + key + "'s L :" + neighbors.getKey(L, level) + "-(" + level + ")->" + x);
+                    neighbors.put(L, level, x);
+                    sender.send(confirmDeleteOp(l));
                 }
                 else {
                     throw new IOException("no left node.");
@@ -355,41 +415,49 @@ public    MembershipVector m;  // Membership vector
         
     }
 
-    private void onReceiveFindNeighborOp(Message mes) {
-        Map<Arg, Object> args = mes.args;
+    private void onReceiveFindNeighborOp(Node s, Map<Object,Object> args) {
         int l = (int)((Integer)args.get(Arg.LEVEL));
-        Id senderId = (Id)args.get(Arg.SENDER_ID);
-        Comparable<?> senderKey = (Comparable<?>) args.get(Arg.SENDER_KEY);
-        if (deleteFlag) {
-            if (neighbors.get(L, l) != null) {
-                trans.send(updateMessage(mes, findNeighborOp(l, senderId, senderKey), neighbors.get(L, l)));
+        Node sender = (Node)args.get(Arg.NODE);
+        List<Id> via = getVia(args);
+        try {
+            if (deleteFlag) {
+                if (neighbors.get(L, l) != null) {
+                    neighbors.get(L, l).send(setVia(findNeighborOp(l, sender), via));
+                }
+                else {
+                    sender.send(setVia(foundNeighborOp(null, l), via));
+                }
             }
             else {
-                trans.send(updateMessage(mes, foundNeighborOp(null, null, l), senderId));
+                sender.send(setVia(foundNeighborOp(self, l), via));
+                System.out.println("update " + key + "'s R :" + neighbors.getKey(R, l) + "-(" + l + ")->" + sender);
+                neighbors.put(R, l, sender);
             }
         }
-        else {
-            trans.send(updateMessage(mes, foundNeighborOp(id, key, l), senderId));
-            System.out.println("update " + key + "'s R :" + neighbors.getKey(R, l) + "-(" + l + ")->" + senderKey);
-            neighbors.put(R, l, senderId, senderKey);
+        catch (Exception e) {
+            e.printStackTrace();
         }
     }
     
-    private void onReceiveSetNeighborNilOp(Message mes) {
-        Map<Arg, Object> args = mes.args;
+    private void onReceiveSetNeighborNilOp(Node s, Map<Object,Object> args) {
         int l = (int)((Integer)args.get(Arg.LEVEL));
-        Id senderId = (Id)args.get(Arg.SENDER_ID);
-        if (deleteFlag) {
-            if (neighbors.get(L, l) != null) {
-                trans.send(newMessage(setNeighborNilOp(l, senderId), neighbors.get(L, l)));
+        Node sender = (Node)args.get(Arg.NODE);
+        try {
+            if (deleteFlag) {
+                if (neighbors.get(L, l) != null) {
+                    neighbors.get(L, l).send(setNeighborNilOp(l, sender));
+                }
+                else {
+                    sender.send(confirmDeleteOp(l));
+                }
             }
             else {
-                trans.send(newMessage(confirmDeleteOp(l), senderId));
+                sender.send(confirmDeleteOp(l));
+                neighbors.put(R, l, null);
             }
         }
-        else {
-            trans.send(newMessage(confirmDeleteOp(l), senderId));
-            neighbors.put(R, l, null, null);
+        catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -402,11 +470,21 @@ public    MembershipVector m;  // Membership vector
         }
     }
     
+    public String toString() {
+        String s = "";
+        s += "ID=" + id + (deleteFlag? "(DELETED)" : "") + "\n";
+        s += "Key=" + getKey() + "\n";
+        s += "MV=" + m.toString() + "\n";
+        s += "Table:" + neighbors.toString() + "\n";
+        return s;
+    }
+    
+    
     // skip graph protocol (search/insert/delete)
-    public Id search(Comparable<?> key) {
-        trans.nestedWait = false; // for better performance
+    public Node search(Comparable<?> key) {
+        self.trans.setParameter(SimTransport.Param.NestedWait, Boolean.FALSE); // for better performance
         searchResult = new SearchResult();
-        onReceiveSearchOp(new Message(id, id, searchOp(id, key, getMaxLevel())));
+        onReceiveSearchOp(self, searchOp(self, key, getMaxLevel()));
         synchronized(searchResult) {
             try {
                 searchResult.wait();
@@ -415,22 +493,21 @@ public    MembershipVector m;  // Membership vector
             }
         }
         if (searchResult.result == Op.FOUND) {
-            return searchResult.foundId;
+            return searchResult.node;
         }
         return null;
     }
     
-    public void insert(Id introducerId) {
+    public void insert(Node introducer) {
         int side, otherSide;
-        
-        trans.nestedWait = false; // for better performance
-        if (introducerId.equals(id)) {
-            neighbors.put(L, 0, null, null);
-            neighbors.put(R, 0, null, null);
+        self.trans.setParameter(SimTransport.Param.NestedWait, Boolean.FALSE);
+        if (introducer.equals(self)) {
+            neighbors.put(L, 0, null);
+            neighbors.put(R, 0, null);
             //maxLevel = 0;
         }
         else {
-            Comparable<?> introducerKey = trans.getKey(introducerId); 
+            Comparable<?> introducerKey = getKey(introducer); 
             if (compare(introducerKey, key) < 0) {
                 side = R;
                 otherSide = L;
@@ -440,48 +517,47 @@ public    MembershipVector m;  // Membership vector
                 otherSide = R;
             }
             try {
-                int maxLevel = trans.getMaxLevelOp(introducerId);
-                Map<Arg, Object> sr = sendAndWait(searchOp(id, key, maxLevel - 1), introducerId, Op.NOT_FOUND);
-                Id otherSideNeighborId = (Id)sr.get(Arg.OTHER_SIDE_NEIGHBOR_ID);
-                Id sideNeighborId = trans.getNeighborOp(otherSideNeighborId, side, 0);
-                if (otherSideNeighborId.equals(sideNeighborId)) {
-                    sideNeighborId = null;
+                Map<Object,Object> mr = introducer.sendAndWait(getMaxLevelOp(), new CheckOp(Op.RET_MAX_LEVEL));
+                int maxLevel = (Integer)mr.get(Arg.LEVEL);
+                Map<Object, Object> sr = introducer.sendAndWait(searchOp(self, key, maxLevel - 1), new CheckOp(Op.NOT_FOUND));
+                Node otherSideNeighbor = (Node)sr.get(Arg.NODE);
+                Map<Object, Object> nr = otherSideNeighbor.sendAndWait(getNeighborOp(side, 0), new CheckOp(Op.RET_NEIGHBOR));
+                Node sideNeighbor = (Node)nr.get(Arg.NODE); 
+
+                if (otherSideNeighbor.equals(sideNeighbor)) {
+                    sideNeighbor = null;
                 }
-                if (otherSideNeighborId != null) {
-                    Map<Arg, Object> r = sendAndWait(getLinkOp(id, side, 0), otherSideNeighborId, Op.SET_LINK);
-                    Id newNeighborId = (Id) r.get(Arg.NEW_NEIGHBOR_ID);
-                    Comparable<?> newNeighborKey = (Comparable<?>) r.get(Arg.NEW_NEIGHBOR_KEY);
+                if (otherSideNeighbor != null) {
+                    Map<Object, Object> r = otherSideNeighbor.sendAndWait(getLinkOp(self, side, 0), new CheckOp(Op.SET_LINK));
+                    Node newNeighbor = (Node) r.get(Arg.NODE);
                     int newLevel = (int)((Integer)r.get(Arg.LEVEL));
-                    neighbors.put(otherSide, newLevel, newNeighborId, newNeighborKey);
+                    neighbors.put(otherSide, newLevel, newNeighbor);
                 }
-                if (sideNeighborId != null) {
-                    Map<Arg, Object> r = sendAndWait(getLinkOp(id, otherSide, 0), sideNeighborId, Op.SET_LINK);
-                    Id newNeighborId = (Id) r.get(Arg.NEW_NEIGHBOR_ID);
-                    Comparable<?> newNeighborKey = (Comparable<?>) r.get(Arg.NEW_NEIGHBOR_KEY);
+                if (sideNeighbor != null) {
+                    Map<Object, Object> r = sideNeighbor.sendAndWait(getLinkOp(self, otherSide, 0), new CheckOp(Op.SET_LINK));
+                    Node newNeighbor = (Node) r.get(Arg.NODE);
                     int newLevel = (int)((Integer)r.get(Arg.LEVEL));
-                    neighbors.put(side, newLevel, newNeighborId, newNeighborKey);
+                    neighbors.put(side, newLevel, newNeighbor);
                 }
                 int l = 0;
                 while (true) {
                     l++;
                     m.randomElement(l);
                     if (neighbors.get(R, l - 1) != null) {
-                        Map<Arg, Object> r = sendAndWait(buddyOp(id, l - 1, m, L), neighbors.get(R, l - 1), Op.SET_LINK);
-                        Id newNeighborId = (Id) r.get(Arg.NEW_NEIGHBOR_ID);
-                        Comparable<?> newNeighborKey =  (Comparable<?>) r.get(Arg.NEW_NEIGHBOR_KEY);
-                        neighbors.put(R, l, newNeighborId, newNeighborKey);
+                        Map<Object, Object> r = neighbors.get(R, l - 1).sendAndWait(buddyOp(self, l - 1, m, L), new CheckOp(Op.SET_LINK));
+                        Node newNeighbor = (Node) r.get(Arg.NODE);
+                        neighbors.put(R, l, newNeighbor);
                     }
                     else {
-                        neighbors.put(R, l, null, null);
+                        neighbors.put(R, l, null);
                     }
                     if (neighbors.get(L, l - 1) != null) {
-                        Map<Arg,Object> r = sendAndWait(buddyOp(id, l - 1, m, R), neighbors.get(L, l - 1), Op.SET_LINK);
-                        Id newNeighborId = (Id) r.get(Arg.NEW_NEIGHBOR_ID);
-                        Comparable<?> newNeighborKey =  (Comparable<?>) r.get(Arg.NEW_NEIGHBOR_KEY);
-                        neighbors.put(L, l, newNeighborId, newNeighborKey);
+                        Map<Object,Object> r = neighbors.get(L, l - 1).sendAndWait(buddyOp(self, l - 1, m, R), new CheckOp(Op.SET_LINK));
+                        Node newNeighbor = (Node) r.get(Arg.NODE);
+                        neighbors.put(L, l, newNeighbor);
                     }
                     else {
-                        neighbors.put(L, l, null, null);
+                        neighbors.put(L, l, null);
                     }
                     if (neighbors.get(R, l) == null && neighbors.get(L, l) == null) break;
                 }
@@ -493,19 +569,19 @@ public    MembershipVector m;  // Membership vector
     }
     
     public void delete() {
-        trans.nestedWait = true; // for correct behavior
+        self.trans.setParameter(SimTransport.Param.NestedWait, Boolean.TRUE); // for correct behavior
         deleteFlag = true;
         try {
             for (int l = getMaxLevel(); l >= 0; l--) {
                 if (neighbors.get(R, l) != null) {
-                    Map<Arg, Object> r = sendAndWait(deleteOp(l, id, key), neighbors.get(R, l), Op.CONFIRM_DELETE, Op.NO_NEIGHBOR);
+                    Map<Object, Object> r = neighbors.get(R, l).sendAndWait(deleteOp(l, self), new CheckOp(Op.CONFIRM_DELETE, Op.NO_NEIGHBOR));
                     Op op = (Op) r.get(Arg.OP);
                     if (op == Op.CONFIRM_DELETE) {
                         // finish this level;
                     }
                     else if (op == Op.NO_NEIGHBOR) {
                         if (neighbors.get(L, l) != null) {
-                            sendAndWait(setNeighborNilOp(l, id), neighbors.get(L, l), Op.CONFIRM_DELETE);
+                            neighbors.get(L, l).sendAndWait(setNeighborNilOp(l, self), new CheckOp(Op.CONFIRM_DELETE));
                         }
                     }
                 }
@@ -514,5 +590,4 @@ public    MembershipVector m;  // Membership vector
             e.printStackTrace();
         }
     }
-    
 }

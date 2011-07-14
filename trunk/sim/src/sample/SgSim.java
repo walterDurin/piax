@@ -1,25 +1,31 @@
 package sample;
 
-import org.piax.ov.Node;
+import org.piax.ov.OverlayManager;
+import org.piax.trans.Node;
 import org.piax.trans.SimTransport;
+import org.piax.trans.Transport;
 
 public class SgSim {
     static public void main(String args[]) {
-        SimTransport trans = new SimTransport();
-        Node seed = new Node(trans);
-        seed.addKey(0);
-        Node start = null;
-        int searchKey = 1;
-        int startKey = 8900;
+        Transport trans = new SimTransport();
         
-        for (int i = 10000; i > 0; i--) {
-            Node n = new Node(trans, seed.id);
-            n.addKey(i);
+        OverlayManager.setOverlay("org.piax.ov.ovs.skipgraph.SkipGraph");
+        
+        OverlayManager seedOv = new OverlayManager(trans);
+        seedOv.putKey(0);
+
+        OverlayManager start = null;
+        int searchKey = 1;
+        int startKey = 890;
+        
+        for (int i = 1000; i > 0; i--) {
+            OverlayManager ov = new OverlayManager(trans);
+            // Following is the way to get a Node instance on SimTransport.
+            Node seed = ((SimTransport)trans).getNode(ov, seedOv);
+            ov.setSeed(seed);
+            ov.putKey(i);
             if (i == startKey) {
-                start = n;
-            }
-            if (i % 1000 == 0) {
-                System.out.println(i);
+                start = ov;
             }
         }
         //System.out.println("--- dump ---");
@@ -31,6 +37,6 @@ public class SgSim {
         //System.out.println("--- dump ---");
         //trans.dump();
         trans.fin();
-        System.out.println("Erapsed: " + trans.getElapsedTime() + "ms");
+        System.out.println("Erapsed: " + ((SimTransport)trans).getElapsedTime() + "ms");
     }
 }
