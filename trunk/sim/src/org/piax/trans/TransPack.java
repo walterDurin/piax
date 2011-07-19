@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Map;
 import org.piax.trans.common.Id;
 
-class TransPack {
+public class TransPack {
     public Node sender;
     public Node receiver;
     public Map<Object,Object> body;

@@ -1,4 +1,4 @@
-package org.piax.trans;
+package org.piax.trans.sim;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -12,10 +12,15 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import org.piax.ov.OverlayManager;
 import org.piax.ov.common.KeyComparator;
+import org.piax.trans.Node;
+import org.piax.trans.ReceiveListener;
+import org.piax.trans.ResponseChecker;
+import org.piax.trans.TransPack;
+import org.piax.trans.Transport;
 import org.piax.trans.common.Id;
 
-public class SimTransport implements Transport,Runnable {
-    HashMap<Id,OverlayManager> nodeMap;
+public class SimTransportOracle implements Runnable {
+    HashMap<Id, ReceiveListener> nodeMap;
     BlockingQueue<TransPack> queue;
     
     static public enum Param {
@@ -41,7 +46,7 @@ public class SimTransport implements Transport,Runnable {
         }
     }
     ArrayList<Monitor> waits;
-    Date startTime;
+    static Date startTime;
 
     private TransPack endMessage() {
         return new TransPack(null, null, null);
@@ -51,10 +56,10 @@ public class SimTransport implements Transport,Runnable {
         return mes.receiver == null;
     }
 
-    public SimTransport() {
+    public SimTransportOracle() {
         //id = Id.newId(ID_LENGTH);
         queue = new LinkedBlockingQueue<TransPack>();
-        nodeMap = new HashMap<Id,OverlayManager> ();
+        nodeMap = new HashMap<Id,ReceiveListener> ();
         waits = new ArrayList<Monitor>();
         startTime = new Date();
         t = new Thread(this);
@@ -69,7 +74,7 @@ public class SimTransport implements Transport,Runnable {
     
     public void addReceiveListener(ReceiveListener listener) {
         // this is a trick to support each listener. Only applicable for ov.OverlayManager
-        nodeMap.put(((OverlayManager)listener).id, (OverlayManager)listener);
+        nodeMap.put(((SimTransport)listener).id, listener);
         
     }
     public Id getId() {
@@ -101,19 +106,18 @@ public class SimTransport implements Transport,Runnable {
             }
             if (tp != null) {
                 if (isEndMessage(tp)) {
-                    System.out.println("END");
                     break;
                 }
-                OverlayManager node = nodeMap.get(tp.receiver.getId());
+                ReceiveListener ov = nodeMap.get(tp.receiver.getId());
                 
                 // replace self of remote node accessor
                 for (Object key : tp.body.keySet()) {
                     Object value = tp.body.get(key);
                     if (value instanceof Node) {
-                        ((Node)value).self = node.getNode(); 
+                        ((Node)value).self = ((Transport)ov).getSelfNode(); 
                     }
                 }
-                tp.sender.self = node.getNode();
+                tp.sender.self = ((Transport)ov).getSelfNode();
                 // tp.receiver.self = node;
                 
                 Monitor monotor = getWait(tp);
@@ -128,11 +132,11 @@ public class SimTransport implements Transport,Runnable {
                     // for better performance...
                     // if it will use sync method in onReceive method, it must start receiver thread. 
                     if (nestedWait) {
-                        new Thread(new ReceiverThread(node, tp)).start();
+                        new Thread(new ReceiverThread(ov, tp)).start();
                     }
                     else {
                         // node.receivedMessage = tp;
-                        node.onReceive(tp.sender, tp.body);
+                        ov.onReceive(tp.sender, tp.body);
                         Thread.yield();
                     }
                 }
@@ -144,15 +148,15 @@ public class SimTransport implements Transport,Runnable {
         queue.add(endMessage());
     }
     
-    public long getElapsedTime() {
+    static public long getElapsedTime() {
         return new Date().getTime() - startTime.getTime();
     }
     
     class ReceiverThread implements Runnable {
-        OverlayManager node;
+        ReceiveListener node;
         TransPack mes;
         
-        public ReceiverThread(OverlayManager node, TransPack mes) {
+        public ReceiverThread(ReceiveListener node, TransPack mes) {
             this.node = node;
             this.mes = mes;
         }
@@ -162,11 +166,17 @@ public class SimTransport implements Transport,Runnable {
         }
     }
     
-    public Node getNode(OverlayManager ov, OverlayManager targetOv) {
-        Node ret = targetOv.getNode();
-        ret.self = ov.getNode();
-        return ret;
+    public Node getRemoteNode(Node self, Node targetNode) {
+    	Node ret = new Node(targetNode.trans, targetNode.getId(), null, targetNode.trans.getAttrs());
+    	ret.self = self;
+    	return ret;
     }
+    
+//    public Node getNode(OverlayManager ov, OverlayManager targetOv) {
+//        Node ret = targetOv.getNode();
+//        ret.self = ov.getNode();
+//        return ret;
+//    }
     
     Monitor addWait(Id id, ResponseChecker checker, Object lock) {
         Monitor ret = new Monitor(id, checker, lock);
@@ -200,7 +210,8 @@ public class SimTransport implements Transport,Runnable {
     
     public class NodeComparator implements Comparator {  
         public int compare(Object arg0, Object arg1) {  
-            return KeyComparator.getInstance().compare(nodeMap.get((Id)arg0).getKey(), nodeMap.get((Id)arg1).getKey());
+//            return KeyComparator.getInstance().compare(nodeMap.get((Id)arg0).getKey(), nodeMap.get((Id)arg1).getKey());
+        	return 0;
         }  
     }
     
@@ -214,8 +225,8 @@ public class SimTransport implements Transport,Runnable {
         
         for (Object obj : o) {
             Id id = (Id) obj;
-            OverlayManager ov = nodeMap.get(id);
-            System.out.println(ov.o.toString());
+            ReceiveListener ov = nodeMap.get(id);
+            System.out.println(ov.toString());
         }
 
     }
@@ -232,10 +243,10 @@ public class SimTransport implements Transport,Runnable {
         
         for (Object obj : o) {
             Id id = (Id) obj;
-            OverlayManager ov = nodeMap.get(id);
-            sb.append("ID=" + ov.id + "\n");
-            sb.append("Key=" + ov.getKey() + "\n");
-            sb.append("MV=" + ov.o.toString() + "\n");
+            ReceiveListener ov = nodeMap.get(id);
+            //sb.append("ID=" + ov.id + "\n");
+            //sb.append("Key=" + ov.getKey() + "\n");
+            //sb.append("MV=" + ov.o.toString() + "\n");
         }
         return sb.toString();
     }

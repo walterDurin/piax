@@ -10,8 +10,8 @@ import org.piax.ov.OverlayManager;
 import org.piax.ov.common.KeyComparator;
 import org.piax.trans.Node;
 import org.piax.trans.ResponseChecker;
-import org.piax.trans.SimTransport;
 import org.piax.trans.common.Id;
+import org.piax.trans.sim.SimTransportOracle;
 
 import static org.piax.trans.Literals.map;
 
@@ -482,7 +482,7 @@ public class SkipGraph implements Overlay {
     
     // skip graph protocol (search/insert/delete)
     public Node search(Comparable<?> key) {
-        self.trans.setParameter(SimTransport.Param.NestedWait, Boolean.FALSE); // for better performance
+        self.trans.setParameter(SimTransportOracle.Param.NestedWait, Boolean.FALSE); // for better performance
         searchResult = new SearchResult();
         onReceiveSearchOp(self, searchOp(self, key, getMaxLevel()));
         synchronized(searchResult) {
@@ -500,7 +500,7 @@ public class SkipGraph implements Overlay {
     
     public void insert(Node introducer) {
         int side, otherSide;
-        self.trans.setParameter(SimTransport.Param.NestedWait, Boolean.FALSE);
+        self.trans.setParameter(SimTransportOracle.Param.NestedWait, Boolean.FALSE);
         if (introducer.equals(self)) {
             neighbors.put(L, 0, null);
             neighbors.put(R, 0, null);
@@ -569,7 +569,7 @@ public class SkipGraph implements Overlay {
     }
     
     public void delete() {
-        self.trans.setParameter(SimTransport.Param.NestedWait, Boolean.TRUE); // for correct behavior
+        self.trans.setParameter(SimTransportOracle.Param.NestedWait, Boolean.TRUE); // for correct behavior
         deleteFlag = true;
         try {
             for (int l = getMaxLevel(); l >= 0; l--) {

@@ -19,8 +19,6 @@ public class OverlayManager implements ReceiveListener {
     public Overlay o;
     static String ovClass;
     
-    public Map<Object,Object> attrs;
-    
     public static String KEY = "key";
 
     static public void setOverlay(String name){
@@ -33,7 +31,7 @@ public class OverlayManager implements ReceiveListener {
             clazz = Class.forName(ovClass);
             Class[] types = {org.piax.trans.Node.class};
             Constructor constructor = clazz.getConstructor(types);
-            Object[] args = {getNode()};
+            Object[] args = {trans.getSelfNode()};
             o = (Overlay)constructor.newInstance(args);
         } catch (Exception e) {
             e.printStackTrace();
@@ -43,8 +41,7 @@ public class OverlayManager implements ReceiveListener {
     public OverlayManager(Transport trans) {
         this.trans = trans;
         this.id = trans.getId();
-        this.seed = getNode();
-        attrs = new HashMap<Object,Object>();
+        this.seed = trans.getSelfNode();
         trans.addReceiveListener(this);
     }
     
@@ -52,7 +49,6 @@ public class OverlayManager implements ReceiveListener {
         this.trans = trans;
         this.id = trans.getId();
         this.seed = seed;
-        attrs = new HashMap<Object,Object>();
         trans.addReceiveListener(this);
     }
 
@@ -61,17 +57,11 @@ public class OverlayManager implements ReceiveListener {
     }
     
     // this can be used as a sender info.
-    public Node getNode() {
-        Node n = new Node(trans, id, null, getAttrs());
-        return n;
-    }
+//  public Node getNode() {
+//	Node n = new Node(trans, id, null, trans.getAttrs());
+//	return n;
+//}
     
-    public Map<Object,Object> getAttrs() {
-        //Map<Object,Object> attrs = new HashMap<Object,Object>();
-        //attrs.put(KEY, key);
-        return attrs;
-    }
-
     public Id getId() {
         return id;
     }
@@ -85,11 +75,11 @@ public class OverlayManager implements ReceiveListener {
     }
     
     public Comparable<?> getKey() {
-        return (Comparable<?>)attrs.get(KEY);
+        return (Comparable<?>)trans.getAttr(KEY);
     }
     
     public void putKey(Comparable<?> key) {
-        attrs.put(KEY, key);
+        trans.putAttr(KEY, key);
         setupOverlay();
         o.insert(seed);
     }
