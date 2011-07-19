@@ -10,7 +10,7 @@ import org.piax.trans.common.Id;
 
 public class Node {
     public Transport trans;
-    public Map<Object,Object> attrs;
+    private Map<Object,Object> attrs;
     private Id id; 
     public Node self;
     static public final String VIA = "via"; 
