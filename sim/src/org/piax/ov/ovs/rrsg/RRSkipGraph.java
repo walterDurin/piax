@@ -194,7 +194,7 @@ public class RRSkipGraph extends SkipGraph {
         }
     }
 	
-	private void dumpMes(Map<Object,Object> mes) {
+	protected void dumpMes(Map<Object,Object> mes) {
 	    for (Object key: mes.keySet()) {
 	        System.out.println(key + ": " + mes.get(key));
 	    }
