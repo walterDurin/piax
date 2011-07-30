@@ -83,6 +83,7 @@ public class SimTransportOracle implements Runnable {
     }
     
     Monitor getWait(TransPack mes) {
+        synchronized(waits) {
         Monitor p = null;
         for (Monitor pair : waits) {
             if (pair.checker.isWaitingFor(mes.body)) {
@@ -94,6 +95,7 @@ public class SimTransportOracle implements Runnable {
             waits.remove(p);
         }
         return p;
+        }
     }
 
     public void run() {
@@ -179,9 +181,11 @@ public class SimTransportOracle implements Runnable {
 //    }
     
     Monitor addWait(Id id, ResponseChecker checker, Object lock) {
+        synchronized(waits) {
         Monitor ret = new Monitor(id, checker, lock);
         waits.add(ret);
         return ret;
+        }
     }
 
     public TransPack sendAndWait(TransPack pack, ResponseChecker checker) throws IOException {
@@ -210,8 +214,7 @@ public class SimTransportOracle implements Runnable {
     
     public class NodeComparator implements Comparator {  
         public int compare(Object arg0, Object arg1) {  
-//            return KeyComparator.getInstance().compare(nodeMap.get((Id)arg0).getKey(), nodeMap.get((Id)arg1).getKey());
-        	return 0;
+            return KeyComparator.getInstance().compare((Comparable<?>)((SimTransport)(nodeMap.get((Id)arg0))).getAttr(OverlayManager.KEY), (Comparable<?>)((SimTransport)(nodeMap.get((Id)arg1))).getAttr(OverlayManager.KEY));
         }  
     }
     
@@ -225,8 +228,7 @@ public class SimTransportOracle implements Runnable {
         
         for (Object obj : o) {
             Id id = (Id) obj;
-            ReceiveListener ov = nodeMap.get(id);
-            System.out.println(ov.toString());
+            System.out.println(nodeMap.get(id));
         }
 
     }
@@ -243,7 +245,7 @@ public class SimTransportOracle implements Runnable {
         
         for (Object obj : o) {
             Id id = (Id) obj;
-            ReceiveListener ov = nodeMap.get(id);
+            sb.append(nodeMap.get(id));
             //sb.append("ID=" + ov.id + "\n");
             //sb.append("Key=" + ov.getKey() + "\n");
             //sb.append("MV=" + ov.o.toString() + "\n");

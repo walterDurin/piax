@@ -8,6 +8,7 @@ import java.util.Map;
 import org.piax.ov.Overlay;
 import org.piax.ov.OverlayManager;
 import org.piax.ov.common.KeyComparator;
+import org.piax.ov.common.Range;
 import org.piax.trans.Node;
 import org.piax.trans.ResponseChecker;
 import org.piax.trans.common.Id;
@@ -46,22 +47,22 @@ public class SkipGraph implements Overlay {
     static final public int R = 0;
     static final public int L = 1;
     
-    class SearchResult {
+    public class SearchResult {
         public Op result;
         public Node node;
     }
 
     private SearchResult searchResult;
     
-    class CheckOp implements ResponseChecker {
-        Op op;
-        Op op2;
-        public CheckOp(Op op) {
+    public class CheckOp implements ResponseChecker {
+        Object op;
+        Object op2;
+        public CheckOp(Object op) {
             this.op = op;
             this.op2 = null;
         }
         
-        public CheckOp(Op op, Op op2) {
+        public CheckOp(Object op, Object op2) {
             this.op = op;
             this.op2 = op2;
         }
@@ -105,16 +106,16 @@ public class SkipGraph implements Overlay {
     }
 
     @SuppressWarnings("unchecked")
-    private List<Id> getVia(Map<Object,Object>args) {
+    protected List<Id> getVia(Map<Object,Object>args) {
         return (List<Id>)args.get(Node.VIA);
     }
     
-    private Map<Object,Object> setVia(Map<Object,Object>args, List<Id> via) {
+    protected Map<Object,Object> setVia(Map<Object,Object>args, List<Id> via) {
         args.put(Node.VIA, via);
         return args;
     }
     
-    public void onReceiveSearchResult(Node sender, Map<Object,Object> arg) {
+    protected void onReceiveSearchResult(Node sender, Map<Object,Object> arg) {
         searchResult.result = (Op) arg.get(Arg.OP);
         List<Id> via = getVia(arg);
         System.out.println("search hops =" + (via == null ? 0 : via.size()));
@@ -172,7 +173,7 @@ public class SkipGraph implements Overlay {
         return KeyComparator.getInstance().compare(a, b);
     }
 
-    private Map<Object,Object> searchOp(Node startNode, Comparable<?> searchKey, int level) {
+    protected Map<Object,Object> searchOp(Node startNode, Comparable<?> searchKey, int level) {
         return map((Object)Arg.OP, (Object)Op.SEARCH).map(Arg.NODE, startNode).map(OverlayManager.KEY, searchKey).map(Arg.LEVEL, level);
     }
     
@@ -180,67 +181,67 @@ public class SkipGraph implements Overlay {
         return map((Object)Arg.OP, (Object)Op.FOUND).map(Arg.NODE, v);
     }
 
-    private Map<Object,Object> notFoundOp(Node v) {
+    protected Map<Object,Object> notFoundOp(Node v) {
         return map((Object)Arg.OP, (Object)Op.NOT_FOUND).map(Arg.NODE, v);
     }
     
-    private Map<Object,Object> getMaxLevelOp() {
+    protected Map<Object,Object> getMaxLevelOp() {
         return map((Object)Arg.OP, (Object)Op.GET_MAX_LEVEL);
     }
     
-    private Map<Object,Object> retMaxLevelOp(int level) {
+    protected Map<Object,Object> retMaxLevelOp(int level) {
         return map((Object)Arg.OP, (Object)Op.RET_MAX_LEVEL).map(Arg.LEVEL, level);
     }
     
-    private Map<Object,Object> getNeighborOp(int side, int level) {
+    protected Map<Object,Object> getNeighborOp(int side, int level) {
         return map((Object)Arg.OP, (Object)Op.GET_NEIGHBOR).map(Arg.SIDE, side).map(Arg.LEVEL, level);
     }
     
-    private Map<Object,Object> retNeighborOp(Node vsidel) {
+    protected Map<Object,Object> retNeighborOp(Node vsidel) {
         return map((Object)Arg.OP, (Object)Op.RET_NEIGHBOR).map(Arg.NODE, vsidel);
     }
 
-    private Map<Object,Object> getLinkOp(Node u, int side, int level) {
+    protected Map<Object,Object> getLinkOp(Node u, int side, int level) {
         return map((Object)Arg.OP, (Object)Op.GET_LINK).map(Arg.NODE, u).map(Arg.SIDE, side).map(Arg.LEVEL, level);
     }
 
-    private Map<Object,Object> setLinkOp(Node node, int level) {
+    protected Map<Object,Object> setLinkOp(Node node, int level) {
         return map((Object)Arg.OP, (Object)Op.SET_LINK).map(Arg.NODE, node).map(Arg.LEVEL,level);
     }
 
-    private Map<Object,Object> buddyOp(Node node, int level, MembershipVector m, int side) {
+    protected Map<Object,Object> buddyOp(Node node, int level, MembershipVector m, int side) {
         return map((Object)Arg.OP, (Object)Op.BUDDY).map(Arg.NODE, node).map(Arg.LEVEL,level).map(Arg.VAL, m).map(Arg.SIDE, side);
     }
     
-    private Map<Object,Object> deleteOp(int level, Node node) {
+    protected Map<Object,Object> deleteOp(int level, Node node) {
         return map((Object)Arg.OP, (Object)Op.DELETE).map(Arg.LEVEL, level).map(Arg.NODE, node);
     }
     
-    private Map<Object,Object> confirmDeleteOp(int level) {
+    protected Map<Object,Object> confirmDeleteOp(int level) {
         return map((Object)Arg.OP, (Object)Op.CONFIRM_DELETE).map(Arg.LEVEL, level);
     }
     
-    private Map<Object,Object> noNeighborOp(int level) {
+    protected Map<Object,Object> noNeighborOp(int level) {
         return map((Object)Arg.OP, (Object)Op.NO_NEIGHBOR).map(Arg.LEVEL, level);
     }
     
-    private Map<Object,Object> setNeighborNilOp(int level, Node node) {
+    protected Map<Object,Object> setNeighborNilOp(int level, Node node) {
         return map((Object)Arg.OP, (Object)Op.SET_NEIGHBOR_NIL).map(Arg.LEVEL, level).map(Arg.NODE, node);
     }
     
-    private Map<Object,Object> findNeighborOp(int level, Node node) {
+    protected Map<Object,Object> findNeighborOp(int level, Node node) {
         return map((Object)Arg.OP, (Object)Op.FIND_NEIGHBOR).map(Arg.LEVEL, level).map(Arg.NODE, node);
     }
     
-    private Map<Object,Object> foundNeighborOp(Node node, int level) {
+    protected Map<Object,Object> foundNeighborOp(Node node, int level) {
         return map((Object)Arg.OP, (Object)Op.FOUND_NEIGHBOR).map(Arg.LEVEL, level).map(Arg.NODE, node);
     }
     
-    private int getMaxLevel() {
+    public int getMaxLevel() {
         return neighbors.skipTable.size() - 1;
     }
 
-    public void onReceiveGetMaxLevelOp(Node sender, Map<Object, Object> args) {
+    protected void onReceiveGetMaxLevelOp(Node sender, Map<Object, Object> args) {
         Node u = sender;
         try {
             u.send(retMaxLevelOp(getMaxLevel()));
@@ -249,7 +250,7 @@ public class SkipGraph implements Overlay {
         } 
     }
     
-    public void onReceiveGetNeighborOp(Node sender, Map<Object, Object> args) {
+    protected void onReceiveGetNeighborOp(Node sender, Map<Object, Object> args) {
         Node u = sender;
         int side = (Integer) args.get(Arg.SIDE);
         int l = (Integer) args.get(Arg.LEVEL);
@@ -260,7 +261,7 @@ public class SkipGraph implements Overlay {
         } 
     }
     
-    public void onReceiveGetLinkOp(Node sender, Map<Object, Object> args) {
+    protected void onReceiveGetLinkOp(Node sender, Map<Object, Object> args) {
         Node u = (Node) args.get(Arg.NODE);
         int side = (int)((Integer)args.get(Arg.SIDE));
         int l = (int)((Integer)args.get(Arg.LEVEL));
@@ -268,7 +269,7 @@ public class SkipGraph implements Overlay {
     }
 
     // Most of l + 1 were l in the original paper.
-    public void onReceiveBuddyOp(Node sender, Map<Object,Object> args) {
+    protected void onReceiveBuddyOp(Node sender, Map<Object,Object> args) {
         int otherSide;
         
         Node u = (Node) args.get(Arg.NODE);
@@ -336,7 +337,7 @@ public class SkipGraph implements Overlay {
         }
     }
 
-    public void onReceiveSearchOp(Node sender, Map<Object,Object> args) {
+    protected void onReceiveSearchOp(Node sender, Map<Object,Object> args) {
         Node startNode = (Node) args.get(Arg.NODE);
         Comparable<?> searchKey = (Comparable<?>) args.get(OverlayManager.KEY);
         int level = (int)((Integer)args.get(Arg.LEVEL));
@@ -349,7 +350,7 @@ public class SkipGraph implements Overlay {
                 while (level >= 0) {
                     Comparable<?> rightKey = neighbors.getKey(R, level);
                     if (rightKey != null && compare(rightKey, searchKey) <= 0) {
-                        System.out.println(String.format("R: KEY:%4d, LEVEL:%2d, MV:%s", key, level, m.toString()));
+                        //System.out.println(String.format("R: KEY:%4d, LEVEL:%2d, MV:%s", key, level, m.toString()));
                         neighbors.get(R, level).send(setVia(searchOp(startNode, searchKey, level), via));
                         break;
                     }
@@ -361,8 +362,8 @@ public class SkipGraph implements Overlay {
             else {
                 while (level >= 0) {
                     Comparable<?> leftKey = neighbors.getKey(L, level);
-                    if (leftKey != null && compare(leftKey, searchKey) >= 0) {
-                        System.out.println(String.format("L: KEY:%4d, LEVEL:%2d, MV:%s", key, level, m.toString()));
+                    if (leftKey != null && compare(searchKey, leftKey) <= 0) {
+                        //System.out.println(String.format("L: KEY:%4s, LEVEL:%2d, MV:%s", key, level, m.toString()));
                         neighbors.get(L, level).send(setVia(searchOp(startNode, searchKey, level), via));
                         break;
                     }
@@ -380,7 +381,7 @@ public class SkipGraph implements Overlay {
         }
     }
 
-    private void onReceiveDeleteOp(Node s, Map<Object,Object> args) {
+    protected void onReceiveDeleteOp(Node s, Map<Object,Object> args) {
         int l = (int)((Integer)args.get(Arg.LEVEL));
         Node sender = (Node)args.get(Arg.NODE);
         List<Id> via = getVia(args);
@@ -415,7 +416,7 @@ public class SkipGraph implements Overlay {
         
     }
 
-    private void onReceiveFindNeighborOp(Node s, Map<Object,Object> args) {
+    protected void onReceiveFindNeighborOp(Node s, Map<Object,Object> args) {
         int l = (int)((Integer)args.get(Arg.LEVEL));
         Node sender = (Node)args.get(Arg.NODE);
         List<Id> via = getVia(args);
@@ -439,7 +440,7 @@ public class SkipGraph implements Overlay {
         }
     }
     
-    private void onReceiveSetNeighborNilOp(Node s, Map<Object,Object> args) {
+    protected void onReceiveSetNeighborNilOp(Node s, Map<Object,Object> args) {
         int l = (int)((Integer)args.get(Arg.LEVEL));
         Node sender = (Node)args.get(Arg.NODE);
         try {
@@ -589,5 +590,11 @@ public class SkipGraph implements Overlay {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    @Override
+    public List<Node> search(Range key) {
+        // Not implemented in this class.
+        return null;
     }
 }
