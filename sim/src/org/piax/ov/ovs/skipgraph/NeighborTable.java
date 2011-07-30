@@ -1,6 +1,7 @@
 package org.piax.ov.ovs.skipgraph;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.piax.ov.OverlayManager;
 import org.piax.trans.Node;
@@ -45,8 +46,33 @@ public class NeighborTable {
             return skipTable.get(level).left;
         }
     }
+    
+    public List<Node> getNodeList(int side) {
+        List<Node> ret = new ArrayList<Node>(); 
+        for (LevelPair pair : skipTable) {
+            if (side == SkipGraph.R) {
+                if (pair.right != null) {
+                    ret.add(pair.right);
+                }
+            }
+            else {
+                if (pair.left != null) {
+                    ret.add(pair.left);
+                }
+            }
+        }
+        return ret;
+    }
 
     public Comparable<?> getKey(int side, int level) {
+        return getAttr(OverlayManager.KEY, side, level);
+    }
+    
+    public Comparable<?> getRangeEnd(int side, int level) {
+        return getAttr(OverlayManager.RANGE_END, side, level);
+    }
+    
+    public Comparable<?> getAttr(Object key, int side, int level) {
         if (skipTable.size() < level + 1) {
             return null;
         }
@@ -54,13 +80,13 @@ public class NeighborTable {
             if (skipTable.get(level).right == null) {
                 return null;
             }
-            return (Comparable<?>)skipTable.get(level).right.getAttr(OverlayManager.KEY);
+            return (Comparable<?>)skipTable.get(level).right.getAttr(key);
         }
         else {
             if (skipTable.get(level).left == null) {
                 return null;
             }
-            return (Comparable<?>)skipTable.get(level).left.getAttr(OverlayManager.KEY);
+            return (Comparable<?>)skipTable.get(level).left.getAttr(key);
         }
     }
     

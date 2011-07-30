@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import org.piax.trans.util.MersenneTwister;
 
 public class MembershipVector {
-    int ALPHABET = 4;
+    int ALPHABET = 2;
     private static MersenneTwister rand;
     static {
         long seed = System.nanoTime();

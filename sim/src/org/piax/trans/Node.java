@@ -32,6 +32,9 @@ public class Node {
         if (via == null) {
             via = new ArrayList<Id>();
         }
+        else {
+            via = new ArrayList<Id>(via);
+        }
         via.add(self.id);
         args.put(VIA, via);
     }
@@ -63,11 +66,16 @@ public class Node {
         return attrs.get(attrKey);
     }
     
+    public void putAttr(Object attrKey, Object attr) {
+        attrs.put(attrKey, attr);
+    }
+    
     public String toString() {
         String ret = "";
         for (Object key: attrs.keySet()) {
-            ret += attrs.get(key).toString();
+            ret += "|" + attrs.get(key);
         }
+        ret += "|";
         return ret;
     }
     

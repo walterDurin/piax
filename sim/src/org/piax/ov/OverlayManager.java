@@ -1,10 +1,12 @@
 package org.piax.ov;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import java.lang.reflect.Constructor;
 
+import org.piax.ov.common.Range;
 import org.piax.trans.ReceiveListener;
 import org.piax.trans.Node;
 import org.piax.trans.Transport;
@@ -20,6 +22,8 @@ public class OverlayManager implements ReceiveListener {
     static String ovClass;
     
     public static String KEY = "key";
+    public static String RANGE_END = "rangeEnd";
+    public static String MAX = "max";
 
     static public void setOverlay(String name){
         ovClass = name;
@@ -83,9 +87,24 @@ public class OverlayManager implements ReceiveListener {
         setupOverlay();
         o.insert(seed);
     }
+    
+    public Range getRange() {
+        return new Range((Comparable<?>)trans.getAttr(KEY), (Comparable<?>)trans.getAttr(RANGE_END));
+    }
 
+    public void putRange(Range range) {
+        trans.putAttr(KEY, range.min);
+        trans.putAttr(RANGE_END, range.max);
+        setupOverlay();
+        o.insert(seed);
+    }
+    
     public Node search(Comparable<?> searchKey) {
         return o.search(searchKey);
+    }
+    
+    public List<Node> search(Range searchRange) {
+        return o.search(searchRange);
     }
     
     public void delete() {

@@ -19,9 +19,9 @@ public class SimTransport implements Transport, ReceiveListener {
 	
 	static public SimTransportOracle o = null;
 	
-	static public SimTransport getInstance() {
-		return new SimTransport();
-	}
+	static public SimTransportOracle getOracle() {
+        return o;
+    }
 	
 	public SimTransport() {
 		if (o == null) {
@@ -75,6 +75,15 @@ public class SimTransport implements Transport, ReceiveListener {
 	public long getElapsedTime() {
 		return SimTransportOracle.getElapsedTime();
 	}
+	
+	public String toString() {
+        String ret = "";
+        for (Object key: attrs.keySet()) {
+            ret += "|" + attrs.get(key);
+        }
+        ret += "|";
+        return ret;
+    }
 
 	@Override
 	public void send(TransPack mes) throws IOException {
