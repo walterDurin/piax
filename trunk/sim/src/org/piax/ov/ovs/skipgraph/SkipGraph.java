@@ -520,7 +520,11 @@ public class SkipGraph implements Overlay {
             try {
                 Map<Object,Object> mr = introducer.sendAndWait(getMaxLevelOp(), new CheckOp(Op.RET_MAX_LEVEL));
                 int maxLevel = (Integer)mr.get(Arg.LEVEL);
-                Map<Object, Object> sr = introducer.sendAndWait(searchOp(self, key, maxLevel - 1), new CheckOp(Op.NOT_FOUND));
+                Map<Object, Object> sr = introducer.sendAndWait(searchOp(self, key, maxLevel - 1), new CheckOp(Op.NOT_FOUND, Op.FOUND));
+                if (sr.get(Arg.OP) == Op.FOUND) {
+                    System.out.println("FOUND.");
+                    return;
+                }
                 Node otherSideNeighbor = (Node)sr.get(Arg.NODE);
                 Map<Object, Object> nr = otherSideNeighbor.sendAndWait(getNeighborOp(side, 0), new CheckOp(Op.RET_NEIGHBOR));
                 Node sideNeighbor = (Node)nr.get(Arg.NODE); 

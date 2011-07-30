@@ -12,6 +12,9 @@ import org.piax.ov.common.KeyComparator;
 import org.piax.ov.common.Range;
 import org.piax.ov.ovs.rrsg.RRSkipGraph;
 import org.piax.ov.ovs.skipgraph.SkipGraph;
+import org.piax.ov.ovs.skipgraph.SkipGraph.Arg;
+import org.piax.ov.ovs.skipgraph.SkipGraph.Op;
+import org.piax.ov.ovs.skipgraph.SkipGraph.SearchResult;
 import org.piax.trans.Node;
 import org.piax.trans.common.Id;
 import org.piax.trans.sim.SimTransportOracle;
@@ -23,7 +26,7 @@ public class RKSkipGraph extends RRSkipGraph {
         MAX
     }
     static public enum Op {
-        FIND_MAX, FOUND_MAX, UPDATE_MAX
+        FIND_MAX, FOUND_MAX
     }
     
     public RKSkipGraph(Node self) {
@@ -82,6 +85,9 @@ public class RKSkipGraph extends RRSkipGraph {
         if (op == Op.FIND_MAX) {
             onReceiveFindMaxOp(sender, mes);
         }
+        else if (op == SkipGraph.Op.FOUND) {
+            onReceiveSearchResult(sender, mes);
+        }
         else {
             super.onReceive(sender, mes);
         }
@@ -138,34 +144,75 @@ public class RKSkipGraph extends RRSkipGraph {
         List<Id> via = getVia(arg);
         Node node = (Node) arg.get(SkipGraph.Arg.NODE);
         if (op == RRSkipGraph.Op.FOUND_IN_RANGE){
-            searchResult.addNode(node);
-            searchResult.addVia(via);
+            rangeSearchResult.addNode(node);
+            rangeSearchResult.addVia(via);
         }
         else {
             System.out.println("not found=" + node);
         }
     }
     
-    SearchResult searchResult;
+    SkipGraph.SearchResult searchResult;
+    SearchResult rangeSearchResult;
+    
     public List<Node> updateMax(Range range, Comparable<?> max, List<Id> via) {
-        searchResult = new SearchResult();
+        rangeSearchResult = new SearchResult();
         onReceiveRangeSearchOp(self, setVia(updateMaxOp(self, range, getMaxLevel(), false, max), via));
-        synchronized(searchResult) {
+        synchronized(rangeSearchResult) {
             try {
-                searchResult.wait(50);
+                rangeSearchResult.wait(50);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
-        Collections.sort(searchResult.nodes, new KeySortComparator());
-        return searchResult.nodes;
+        Collections.sort(rangeSearchResult.nodes, new KeySortComparator());
+        return rangeSearchResult.nodes;
+    }
+    
+    protected void onReceiveSearchResult(Node sender, Map<Object,Object> arg) {
+        dumpMes(arg);
+        if (searchResult == null) {
+            System.out.println("what?");
+        }
+        searchResult.result = (SkipGraph.Op) arg.get(SkipGraph.Arg.OP);
+        List<Id> via = getVia(arg);
+        System.out.println("search hops =" + (via == null ? 0 : via.size()));
+        if (searchResult.result == SkipGraph.Op.FOUND){
+            searchResult.node = (Node) arg.get(SkipGraph.Arg.NODE);
+        }
+        else {
+            searchResult.node = (Node) arg.get(SkipGraph.Arg.NODE);
+        }
+        synchronized(searchResult) {
+            searchResult.notify();
+        }
+    }
+    
+    @Override
+    public Node search(Comparable<?> key) {
+        self.trans.setParameter(SimTransportOracle.Param.NestedWait, Boolean.FALSE); // for better performance
+        searchResult = new SkipGraph.SearchResult();
+        onReceiveSearchOp(self, searchOp(self, key, getMaxLevel()));
+        synchronized(searchResult) {
+            try {
+                searchResult.wait();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        if (searchResult.result == SkipGraph.Op.FOUND) {
+            return searchResult.node;
+        }
+        return null;
     }
 
+    @Override
     public void insert(Node introducer) {
         self.trans.setParameter(SimTransportOracle.Param.NestedWait, Boolean.FALSE); // for better performance
         super.insert(introducer);
         // seed.
         if (neighbors.get(L, 0) == null && neighbors.get(R, 0) == null) {
+            setMax(rangeEnd);
             return;
         }
         if (compare(rangeEnd, getMax(neighbors.get(L, 0))) > 0) {
@@ -176,9 +223,7 @@ public class RKSkipGraph extends RRSkipGraph {
                 Node x = (Node) found.get(SkipGraph.Arg.NODE);
                 List<Id> via = getVia(found);
                 if (self != x) {
-                    System.out.println("range: (" + key +"," +  getKey(x) + ")");
                     List<Node> updated = updateMax(new Range(key, getKey(x)), getMax(), via);
-                    System.out.println("updated:" + updated);
                 }
             } catch (IOException e) {
                 e.printStackTrace();
