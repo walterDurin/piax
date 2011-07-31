@@ -164,7 +164,9 @@ public class RKSkipGraph extends RRSkipGraph {
     
     private boolean rangeOverlaps(Range range1, Range range2) {
         return ((compare(range2.min, range1.min) <= 0 && compare(range1.min, range2.max) <= 0) ||
-                (compare(range2.min, range1.max) <= 0 && compare(range1.max, range2.max) <= 0));
+                (compare(range2.min, range1.max) <= 0 && compare(range1.max, range2.max) <= 0) ||
+                (compare(range1.min, range2.min) <= 0 && compare(range2.min, range1.max) <= 0) ||
+                (compare(range1.min, range2.max) <= 0 && compare(range2.max, range1.max) <= 0));
     }
     
     protected void onRangeMatch(Node sender, Map<Object,Object> args) {
