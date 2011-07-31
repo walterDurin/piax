@@ -77,7 +77,7 @@ public class RRSkipGraph extends SkipGraph {
             searchResult.addVia(via);
         }
         else {
-            System.out.println("not found=" + node);
+            //System.out.println("not found=" + node);
         }
     }
 	
