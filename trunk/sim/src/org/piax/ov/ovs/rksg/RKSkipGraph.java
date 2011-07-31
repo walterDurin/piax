@@ -20,7 +20,7 @@ public class RKSkipGraph extends RRSkipGraph {
     public Comparable<?> rangeEnd;
     
     static public enum Arg {
-        MAX
+        MAX, RANGE
     }
     static public enum Op {
         FIND_MAX, FOUND_MAX
@@ -94,6 +94,10 @@ public class RKSkipGraph extends RRSkipGraph {
         return map((Object)SkipGraph.Arg.OP, (Object)RRSkipGraph.Op.RANGE_SEARCH).map(SkipGraph.Arg.NODE, startNode).map(RRSkipGraph.Arg.RANGE, range).map(SkipGraph.Arg.LEVEL, level).map(RRSkipGraph.Arg.FOUND, found).map(Arg.MAX, max);
     }
     
+    private Map<Object,Object> findOverlapOp(Node startNode, Range range, int level, boolean found, Range searchRange) {
+        return map((Object)SkipGraph.Arg.OP, (Object)RRSkipGraph.Op.RANGE_SEARCH).map(SkipGraph.Arg.NODE, startNode).map(RRSkipGraph.Arg.RANGE, range).map(SkipGraph.Arg.LEVEL, level).map(RRSkipGraph.Arg.FOUND, found).map(Arg.RANGE, searchRange);
+    }
+    
     private Map<Object,Object> foundMaxOp(Node v) {
         return map((Object)SkipGraph.Arg.OP, (Object)Op.FOUND_MAX).map(SkipGraph.Arg.NODE, v);
     }
@@ -127,8 +131,8 @@ public class RKSkipGraph extends RRSkipGraph {
                      (compare(max, getMax()) < 0 && compare(max, getMax(L)) > 0)) { // last one step.
                 while (level >= 0) {
                     Node leftNode = neighbors.get(L, level);
-                    if (leftNode != null && ((compare(max, getMax()) < 0 && compare(max, getMax(L)) < 0) ||
-                                             (compare(max, getMax()) < 0 && compare(max, getMax(L)) > 0))) {
+                    if (leftNode != null && ((compare(max, getMax()) < 0 && compare(max, getMax(leftNode)) < 0) ||
+                                             (compare(max, getMax()) < 0 && compare(max, getMax(leftNode)) > 0))) {
                         neighbors.get(L, level).send(setVia(findMaxOp(startNode, max, level), via));
                         break;
                     }
@@ -158,14 +162,29 @@ public class RKSkipGraph extends RRSkipGraph {
         }
     }
     
+    private boolean rangeOverlaps(Range range1, Range range2) {
+        return ((compare(range2.min, range1.min) <= 0 && compare(range1.min, range2.max) <= 0) ||
+                (compare(range2.min, range1.max) <= 0 && compare(range1.max, range2.max) <= 0));
+    }
+    
     protected void onRangeMatch(Node sender, Map<Object,Object> args) {
         Node startNode = (Node) args.get(SkipGraph.Arg.NODE);
         List<Id> via = getVia(args);
         Comparable<?> max = (Comparable<?>) args.get(Arg.MAX);
+        Range searchRange = (Range) args.get(Arg.RANGE);
         try {
             if (max != null) {
                 //System.out.println("set max of " + key + ":" + getMax() + "->" + max);
                 setMax(max);
+            }
+            if (searchRange != null) {
+                if (rangeOverlaps(searchRange, new Range(key, rangeEnd))) {
+                    startNode.send(setVia(foundInRangeOp(self), via));
+                }
+                else {
+                    startNode.send(setVia(notFoundInRangeOp(self), via));
+                }
+                return;
             }
             startNode.send(setVia(foundInRangeOp(self), via));
         }
@@ -183,7 +202,7 @@ public class RKSkipGraph extends RRSkipGraph {
             rangeSearchResult.addVia(via);
         }
         else {
-            System.out.println("not found=" + node);
+            // System.out.println("not found=" + node);
         }
     }
     
@@ -204,6 +223,31 @@ public class RKSkipGraph extends RRSkipGraph {
         return rangeSearchResult.nodes;
     }
     
+    public List<Node> findOverlap(Range range, Range searchRange, List<Id> via) {
+        self.trans.setParameter(SimTransportOracle.Param.NestedWait, Boolean.FALSE); // for better performance
+        rangeSearchResult = new SearchResult();
+        onReceiveRangeSearchOp(self, setVia(findOverlapOp(self, range, getMaxLevel(), false, searchRange), via));
+        synchronized(rangeSearchResult) {
+            try {
+                rangeSearchResult.wait(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        Collections.sort(rangeSearchResult.nodes, new KeySortComparator());
+        int hopSum = 0;
+        for (List<Id> v : rangeSearchResult.vias) {
+            hopSum += v.size();
+        }
+        System.out.println("Matches= " + rangeSearchResult.vias.size() + ", Ave. hops=" + (hopSum / (double)rangeSearchResult.vias.size()));
+        return rangeSearchResult.nodes;
+    }
+    
+    @Override
+    public List<Node> overlapSearch(Comparable<?> key) {
+        return overlapSearch(new Range(key, key));
+    }
+    
     @Override
     public List<Node> overlapSearch(Range range) {
         self.trans.setParameter(SimTransportOracle.Param.NestedWait, Boolean.FALSE); // for better performance
@@ -212,7 +256,9 @@ public class RKSkipGraph extends RRSkipGraph {
             Node x = (Node) found.get(SkipGraph.Arg.NODE);
             List<Id> via = getVia(found);
             if (self != x) {
-                return search(new Range(getKey(x), range.max));
+                Range cr = new Range(getKey(x), range.max);
+                cr.includeMin = false;
+                return findOverlap(cr, range, via);
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -270,4 +316,11 @@ public class RKSkipGraph extends RRSkipGraph {
             setMax(getMax(neighbors.get(L, 0)));
         }
     }
+    
+    @Override
+    public void delete() {
+        super.delete();
+        // update max? or leave 'em alone.
+    }
+    
 }

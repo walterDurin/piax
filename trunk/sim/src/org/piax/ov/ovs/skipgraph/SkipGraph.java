@@ -400,7 +400,7 @@ public class SkipGraph implements Overlay {
                     Map<Object, Object> sr = neighbors.get(L, l).sendAndWait(findNeighborOp(l, self), new CheckOp(Op.FOUND_NEIGHBOR));
                     Node x = (Node) sr.get(Arg.NODE);
                     int level = (int)((Integer) sr.get(Arg.LEVEL));
-                    System.out.println("update " + key + "'s L :" + neighbors.getKey(L, level) + "-(" + level + ")->" + x);
+                    //System.out.println("update " + key + "'s L :" + neighbors.getKey(L, level) + "-(" + level + ")->" + x);
                     neighbors.put(L, level, x);
                     sender.send(confirmDeleteOp(l));
                 }
@@ -431,7 +431,7 @@ public class SkipGraph implements Overlay {
             }
             else {
                 sender.send(setVia(foundNeighborOp(self, l), via));
-                System.out.println("update " + key + "'s R :" + neighbors.getKey(R, l) + "-(" + l + ")->" + sender);
+                //System.out.println("update " + key + "'s R :" + neighbors.getKey(R, l) + "-(" + l + ")->" + sender);
                 neighbors.put(R, l, sender);
             }
         }
@@ -605,6 +605,12 @@ public class SkipGraph implements Overlay {
     @Override
     public List<Node> overlapSearch(Range key) {
         // Not implemented in this class.
+        return null;
+    }
+
+    @Override
+    public List<Node> overlapSearch(Comparable<?> key) {
+        // TODO Auto-generated method stub
         return null;
     }
 }

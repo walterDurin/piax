@@ -1,11 +1,11 @@
 package sample;
 
-import java.util.Random;
+import java.util.ArrayList;
+import java.util.Collections;
 
 import org.piax.ov.OverlayManager;
 import org.piax.ov.common.Range;
 import org.piax.trans.Node;
-import org.piax.trans.Transport;
 import org.piax.trans.sim.SimTransport;
 
 public class RkSgSim {
@@ -14,50 +14,36 @@ public class RkSgSim {
 
         SimTransport seedTrans = new SimTransport();
         OverlayManager seedOv = new OverlayManager(seedTrans);
-        seedOv.putRange(new Range((double)2, (double)5));
+        seedOv.putRange(new Range((double)0, (double)25.0));
 
         OverlayManager start = null;
-        double searchKey = 6;
-        double startKey = 7;
-        int[] nums = {7, 2, 6, 5, 4, 3, 1};
+        double searchKey = 900;
+        double startKey = 890.0;
+        int NUM = 1000;
+        ArrayList<Double> keys = new ArrayList<Double>();
         
-        for (int i : nums) {
+        for (int i = 1; i < NUM; i++) {
+            keys.add((double)i);
+        }
+        Collections.shuffle(keys);
+        
+        for (double i : keys) {
             SimTransport trans = new SimTransport();
             OverlayManager ov = new OverlayManager(trans);
             Node seed = trans.getRemoteNode(seedTrans);
             ov.setSeed(seed);
-            if (i == 1) {
-                ov.putRange(new Range((double) 6, (double) 14));
-            }
-            if (i == 2) {
-                ov.putRange(new Range((double) 9, (double) 12));
-            }
-            if (i == 3) {
-                ov.putRange(new Range((double) 14, (double) 16));
-            }
-            if (i == 4) {
-                ov.putRange(new Range((double) 15, (double) 23));
-            }
-            if (i == 5) {
-                ov.putRange(new Range((double) 18, (double) 19));
-            }
-            if (i == 6) {
-                ov.putRange(new Range((double) 20, (double) 27));
-            }
-            if (i == 7) {
-                ov.putRange(new Range((double) 21, (double) 30));
-            }
+            ov.putRange(new Range(i, i + Math.random() * 20));
             if (i == startKey) {
                 start = ov;
             }
         }
-        System.out.println("--- start dump ---");
-        SimTransport.getOracle().dump();
-        System.out.println("--- end dump ---");
-        System.out.println("--- search " + searchKey + " from " + startKey + "---");
-        System.out.println("search result=" + start.search((double)13));
-        System.out.println("--- delete " + startKey + "---");
-        start.delete();
+//        System.out.println("--- start dump ---");
+        //SimTransport.getOracle().dump();
+//        System.out.println("--- end dump ---");
+//        System.out.println("--- search " + searchKey + " from " + startKey + "---");
+        System.out.println("search result=" + start.overlapSearch((double)searchKey));
+//        System.out.println("--- delete " + startKey + "---");
+//        start.delete();
 
         seedTrans.fin();
         System.out.println("Erapsed: " + ((SimTransport)seedTrans).getElapsedTime() + "ms");

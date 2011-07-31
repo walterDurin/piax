@@ -152,14 +152,14 @@ public class RRSkipGraph extends SkipGraph {
                 while (level >= 0) {
                     Comparable<?> rightKey = neighbors.getKey(R, level);
                     if (rightKey != null && compare(rightKey, searchRange.min) <= 0) {
-                        System.out.println(String.format("R: KEY:%4s, LEVEL:%2d, MV:%s", key, level, m.toString()));
+                        //System.out.println(String.format("R: KEY:%4s, LEVEL:%2d, MV:%s", key, level, m.toString()));
                         neighbors.get(R, level).send(rangeSearchOp(mes, searchRange, level, found));
                         break;
                     }
                     else {
                         if (rightKey != null && searchRange.includes(rightKey)) {
                             List<Range> divided = searchRange.divideR(rightKey);
-                            System.out.println(String.format("R: KEY:%4s, LEVEL:%2d, MV:%s, Range: %s", key, level, m.toString(), divided.get(1)));
+                            //System.out.println(String.format("R: KEY:%4s, LEVEL:%2d, MV:%s, Range: %s", key, level, m.toString(), divided.get(1)));
                             neighbors.get(R, level).send(rangeSearchOp(mes, divided.get(1), level, found));
                             searchRange = divided.get(0);
                         }

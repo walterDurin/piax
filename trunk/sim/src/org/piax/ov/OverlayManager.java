@@ -99,6 +99,14 @@ public class OverlayManager implements ReceiveListener {
         o.insert(seed);
     }
     
+    public List<Node> overlapSearch(Range searchRange) {
+        return o.overlapSearch(searchRange);
+    }
+    
+    public List<Node> overlapSearch(Comparable<?> searchKey) {
+        return o.overlapSearch(searchKey);
+    }
+    
     public Node search(Comparable<?> searchKey) {
         return o.search(searchKey);
     }
