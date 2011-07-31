@@ -601,4 +601,10 @@ public class SkipGraph implements Overlay {
         // Not implemented in this class.
         return null;
     }
+
+    @Override
+    public List<Node> overlapSearch(Range key) {
+        // Not implemented in this class.
+        return null;
+    }
 }
