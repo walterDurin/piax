@@ -200,11 +200,12 @@ public class RKSkipGraph extends RRSkipGraph {
         List<Id> via = getVia(arg);
         Node node = (Node) arg.get(SkipGraph.Arg.NODE);
         if (op == RRSkipGraph.Op.FOUND_IN_RANGE){
-            rangeSearchResult.addNode(node);
-            rangeSearchResult.addVia(via);
+            rangeSearchResult.addMatch(node);
+            rangeSearchResult.addMatchVia(via);
         }
         else {
-            // System.out.println("not found=" + node);
+            rangeSearchResult.addUnmatch(node);
+            rangeSearchResult.addUnmatchVia(via);
         }
     }
     
@@ -221,8 +222,8 @@ public class RKSkipGraph extends RRSkipGraph {
                 e.printStackTrace();
             }
         }
-        Collections.sort(rangeSearchResult.nodes, new KeySortComparator());
-        return rangeSearchResult.nodes;
+        Collections.sort(rangeSearchResult.matches, new KeySortComparator());
+        return rangeSearchResult.matches;
     }
     
     public List<Node> findOverlap(Range range, Range searchRange, List<Id> via) {
@@ -236,13 +237,22 @@ public class RKSkipGraph extends RRSkipGraph {
                 e.printStackTrace();
             }
         }
-        Collections.sort(rangeSearchResult.nodes, new KeySortComparator());
+        Collections.sort(rangeSearchResult.matches, new KeySortComparator());
         int hopSum = 0;
-        for (List<Id> v : rangeSearchResult.vias) {
+        for (List<Id> v : rangeSearchResult.mVias) {
             hopSum += v.size();
         }
-        System.out.println("Matches= " + rangeSearchResult.vias.size() + ", Ave. hops=" + (hopSum / (double)rangeSearchResult.vias.size()));
-        return rangeSearchResult.nodes;
+        if (rangeSearchResult.mVias.size() != 0) { 
+            System.out.println("Matches= " + rangeSearchResult.mVias.size() + ", Ave. hops=" + (hopSum / (double)rangeSearchResult.mVias.size()));
+        }
+        hopSum = 0;
+        for (List<Id> v : rangeSearchResult.uVias) {
+            hopSum += v.size();
+        }
+        if (rangeSearchResult.uVias.size() != 0) {
+            System.out.println("Unmatches= " + rangeSearchResult.uVias.size() + ", Ave. hops=" + (hopSum / (double)rangeSearchResult.uVias.size()));
+        }
+        return rangeSearchResult.matches;
     }
     
     @Override
@@ -259,7 +269,9 @@ public class RKSkipGraph extends RRSkipGraph {
             List<Id> via = getVia(found);
             if (self != x) {
                 Range cr = new Range(getKey(x), range.max);
-                cr.includeMin = false;
+                if (compare(cr.min, cr.max) != 0) {
+                    cr.includeMin = false;
+                }
                 return findOverlap(cr, range, via);
             }
         } catch (IOException e) {
@@ -286,8 +298,8 @@ public class RKSkipGraph extends RRSkipGraph {
                 e.printStackTrace();
             }
         }
-        Collections.sort(rangeSearchResult.nodes, new KeySortComparator());
-        return rangeSearchResult.nodes;
+        Collections.sort(rangeSearchResult.matches, new KeySortComparator());
+        return rangeSearchResult.matches;
     }
     
     @Override

@@ -32,6 +32,8 @@ public class SimTransportOracle implements Runnable {
     //Id id;
     Thread t;
     int ID_LENGTH = 16;
+    
+    public static int messageCount;
 
     class Monitor {
         Id id;
@@ -62,8 +64,21 @@ public class SimTransportOracle implements Runnable {
         nodeMap = new HashMap<Id,ReceiveListener> ();
         waits = new ArrayList<Monitor>();
         startTime = new Date();
+        clearMessageCount();
         t = new Thread(this);
         t.start();
+    }
+    
+    public static void clearMessageCount() {
+        messageCount = 0;
+    }
+    
+    public static int messageCount() {
+        return messageCount;
+    }
+    
+    public static void countMessage() {
+        messageCount++;
     }
     
     public void setParameter(Object key, Object value) {
@@ -194,6 +209,7 @@ public class SimTransportOracle implements Runnable {
         synchronized(lock) {
             try {
                 queue.add(pack);
+                countMessage();
                 lock.wait();
                 Thread.yield();
             } catch (InterruptedException e) {
@@ -209,6 +225,7 @@ public class SimTransportOracle implements Runnable {
 
     public void send(TransPack pack) {
         queue.add(pack);
+        countMessage();
         Thread.yield();
     }
     
