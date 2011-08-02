@@ -32,18 +32,28 @@ public class RRSkipGraph extends SkipGraph {
 	}
 	
 	protected class SearchResult {
-	    public List<Node> nodes;
-	    public List<List<Id>> vias;
+	    public List<Node> matches;
+	    public List<Node> unmatches;
+	    public List<List<Id>> mVias;
+	    public List<List<Id>> uVias;
 	    public SearchResult() {
-	        nodes = new ArrayList<Node>();
-	        vias = new ArrayList<List<Id>>();
+	        matches = new ArrayList<Node>();
+	        unmatches = new ArrayList<Node>();
+	        mVias = new ArrayList<List<Id>>();
+	        uVias = new ArrayList<List<Id>>();
 	    }
-	    public void addNode(Node node) {
-	        nodes.add(node);
-	    }
-	    public void addVia(List<Id> via) {
-	        vias.add(via);
-	    }
+	    public void addMatch(Node node) {
+            matches.add(node);
+        }
+	    public void addUnmatch(Node node) {
+            unmatches.add(node);
+        }
+	    public void addMatchVia(List<Id> via) {
+            mVias.add(via);
+        }
+	    public void addUnmatchVia(List<Id> via) {
+            uVias.add(via);
+        }
 	}
 	SearchResult searchResult;
 	
@@ -73,11 +83,12 @@ public class RRSkipGraph extends SkipGraph {
         List<Id> via = getVia(arg);
         Node node = (Node) arg.get(SkipGraph.Arg.NODE);
         if (op == Op.FOUND_IN_RANGE){
-            searchResult.addNode(node);
-            searchResult.addVia(via);
+            searchResult.addMatch(node);
+            searchResult.addMatchVia(via);
         }
         else {
-            //System.out.println("not found=" + node);
+            searchResult.addUnmatch(node);
+            searchResult.addUnmatchVia(via);
         }
     }
 	
@@ -98,8 +109,8 @@ public class RRSkipGraph extends SkipGraph {
                 e.printStackTrace();
             }
         }
-        Collections.sort(searchResult.nodes, new KeySortComparator());
-        return searchResult.nodes;
+        Collections.sort(searchResult.matches, new KeySortComparator());
+        return searchResult.matches;
 	}
 	
 	protected int compare(Comparable<?> a, Comparable<?>b) {

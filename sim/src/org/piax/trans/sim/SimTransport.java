@@ -87,7 +87,6 @@ public class SimTransport implements Transport, ReceiveListener {
 
 	@Override
 	public void send(TransPack mes) throws IOException {
-		// TODO Auto-generated method stub
 		o.send(mes);
 	}
 

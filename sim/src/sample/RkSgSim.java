@@ -7,6 +7,7 @@ import org.piax.ov.OverlayManager;
 import org.piax.ov.common.Range;
 import org.piax.trans.Node;
 import org.piax.trans.sim.SimTransport;
+import org.piax.trans.sim.SimTransportOracle;
 
 public class RkSgSim {
     static public void main(String args[]) {
@@ -16,9 +17,11 @@ public class RkSgSim {
         OverlayManager seedOv = new OverlayManager(seedTrans);
         seedOv.putRange(new Range((double)0, (double)25.0));
 
+        double yure = 0; 
+
         OverlayManager start = null;
         double searchKey = 900;
-        double startKey = 890.0;
+        double startKey = 100.0;
         int NUM = 1000;
         ArrayList<Double> keys = new ArrayList<Double>();
         
@@ -32,7 +35,7 @@ public class RkSgSim {
             OverlayManager ov = new OverlayManager(trans);
             Node seed = trans.getRemoteNode(seedTrans);
             ov.setSeed(seed);
-            ov.putRange(new Range(i, i + Math.random() * 20));
+            ov.putRange(new Range(i, i + Math.random() * yure));
             if (i == startKey) {
                 start = ov;
             }
@@ -41,10 +44,12 @@ public class RkSgSim {
         //SimTransport.getOracle().dump();
 //        System.out.println("--- end dump ---");
 //        System.out.println("--- search " + searchKey + " from " + startKey + "---");
-        System.out.println("search result=" + start.overlapSearch((double)searchKey));
+        System.out.println("insert message count=" + SimTransportOracle.messageCount());
+        SimTransportOracle.clearMessageCount();
+        start.overlapSearch((double)searchKey);
 //        System.out.println("--- delete " + startKey + "---");
 //        start.delete();
-
+        System.out.println("search message count=" + SimTransportOracle.messageCount());
         seedTrans.fin();
         System.out.println("Erapsed: " + ((SimTransport)seedTrans).getElapsedTime() + "ms");
     }
