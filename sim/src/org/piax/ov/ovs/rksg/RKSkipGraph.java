@@ -56,8 +56,8 @@ public class RKSkipGraph extends RRSkipGraph {
         return null;
     }
     
-    private Map<Object,Object> getContainingsOp(Node v) {
-        return map((Object)SkipGraph.Arg.OP, (Object)Op.GET_CONTAININGS).map(SkipGraph.Arg.NODE, v);
+    private Map<Object,Object> getContainingsOp(Node v, Range range) {
+        return map((Object)SkipGraph.Arg.OP, (Object)Op.GET_CONTAININGS).map(SkipGraph.Arg.NODE, v).map(Arg.RANGE, range);
     }
     
     private Map<Object,Object> updateContainingsOp(Node startNode, Range range, int level, boolean found, Node containing) {
@@ -113,9 +113,16 @@ public class RKSkipGraph extends RRSkipGraph {
     
     protected void onReceiveGetContainingsOp(Node sender, Map<Object, Object> args) {
         try {
+            Range range = (Range) args.get(Arg.RANGE);
             List<Node> ret = new ArrayList<Node>();
-            ret.addAll(containings);
-            ret.add(self);
+            for (Node node : containings) {
+                if (rangeOverlaps(range, new Range(getKey(node), getRangeEnd(node)))) {
+                    ret.add(node);
+                }
+            }
+            if (rangeOverlaps(range, new Range(getKey(), getRangeEnd()))) {
+                ret.add(self);
+            }
             sender.send(foundContainingsOp(ret));
         } catch (IOException e) {
             e.printStackTrace();
@@ -226,10 +233,12 @@ public class RKSkipGraph extends RRSkipGraph {
         if (leftMax != null) {
             Map<Object, Object> mes;
             try {
-                mes = leftMax.sendAndWait(getContainingsOp(self), new CheckOp(Op.FOUND_CONTAININGS));
-                for (Node containing : (List<Node>)mes.get(Arg.CONTAININGS)) {
-                    if (rangeOverlaps(new Range(getKey(containing), getRangeEnd(containing)), range)) {
-                        rangeSearchResult.matches.add(containing);
+                mes = leftMax.sendAndWait(getContainingsOp(self, range), new CheckOp(Op.FOUND_CONTAININGS));
+                if (mes != null) {
+                    for (Node containing : (List<Node>)mes.get(Arg.CONTAININGS)) {
+                        if (rangeOverlaps(new Range(getKey(containing), getRangeEnd(containing)), range)) {
+                            rangeSearchResult.matches.add(containing);
+                        }
                     }
                 }
             } catch (IOException e) {
@@ -246,7 +255,7 @@ public class RKSkipGraph extends RRSkipGraph {
             int maxLevel = (Integer)mr.get(SkipGraph.Arg.LEVEL);
             Map<Object, Object> sr = introducer.sendAndWait(searchOp(self, key, maxLevel - 1), new CheckOp(SkipGraph.Op.NOT_FOUND, SkipGraph.Op.FOUND));
             Node neighbor = (Node)sr.get(SkipGraph.Arg.NODE);
-            System.out.println("NEIGHBOR=" + neighbor);
+            //System.out.println("NEIGHBOR=" + neighbor);
             if (neighbor != null && compare(key, getKey(neighbor)) < 0) {
                 Map<Object, Object> mes = neighbor.sendAndWait(getLeftOp(), new CheckOp(Op.RET_LEFT));
                 return (Node)mes.get(SkipGraph.Arg.NODE);
@@ -292,10 +301,9 @@ public class RKSkipGraph extends RRSkipGraph {
         try {
             if (!introducer.equals(self)) {
                 Node leftMax = findLeftMax(introducer, getKey());
-                System.out.println("KEY=" + getKey() + ", LEFT MAX=" + leftMax);
+                //System.out.println("KEY=" + getKey() + ", LEFT MAX=" + leftMax);
                 if (leftMax != null) {
-                    Map<Object, Object> mes;
-                    mes = leftMax.sendAndWait(getContainingsOp(self), new CheckOp(Op.FOUND_CONTAININGS));
+                    Map<Object, Object> mes = leftMax.sendAndWait(getContainingsOp(self, range), new CheckOp(Op.FOUND_CONTAININGS));
                     rangeSearchResult.addContainings((List<Node>)mes.get(Arg.CONTAININGS));
                 }
             }
@@ -315,7 +323,7 @@ public class RKSkipGraph extends RRSkipGraph {
             e.printStackTrace();
         }
         containings = rangeSearchResult.containings;
-        System.out.println(range + ", CONTAININGS=" + containings);
+        //System.out.println(range + ", CONTAININGS=" + containings);
     }
     
     @Override
