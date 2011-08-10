@@ -2,6 +2,7 @@
 package org.piax.ov.ovs.skipgraph;
 
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -75,6 +76,12 @@ public class SkipGraph implements Overlay {
                 return (mes.get(Arg.OP) == op || mes.get(Arg.OP) == op2);
             }
         }
+    }
+    
+    public class KeySortComparator implements Comparator {  
+        public int compare(Object arg0, Object arg1) {  
+            return KeyComparator.getInstance().compare((Comparable<?>)((Node)arg0).getAttr(OverlayManager.KEY), (Comparable<?>)((Node)arg1).getAttr(OverlayManager.KEY));
+        }  
     }
      
     public SkipGraph(Node self) {
@@ -169,7 +176,7 @@ public class SkipGraph implements Overlay {
         return message;
     }
     
-    int compare(Comparable<?> a, Comparable<?>b) {
+    protected int compare(Comparable<?> a, Comparable<?>b) {
         return KeyComparator.getInstance().compare(a, b);
     }
 
@@ -350,7 +357,7 @@ public class SkipGraph implements Overlay {
                 while (level >= 0) {
                     Comparable<?> rightKey = neighbors.getKey(R, level);
                     if (rightKey != null && compare(rightKey, searchKey) <= 0) {
-                        //System.out.println(String.format("R: KEY:%4d, LEVEL:%2d, MV:%s", key, level, m.toString()));
+                        //System.out.println(String.format("R: KEY:%4s, LEVEL:%2d, MV:%s", key, level, m.toString()));
                         neighbors.get(R, level).send(setVia(searchOp(startNode, searchKey, level), via));
                         break;
                     }
