@@ -3,44 +3,50 @@ package org.piax.ov.ovs.rksg;
 import static org.piax.trans.Literals.map;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import org.piax.ov.OverlayManager;
-import org.piax.ov.common.KeyComparator;
 import org.piax.ov.common.Range;
 import org.piax.ov.ovs.rrsg.RRSkipGraph;
 import org.piax.ov.ovs.skipgraph.SkipGraph;
+import org.piax.ov.ovs.skipgraph.SkipGraph.Arg;
+import org.piax.ov.ovs.skipgraph.SkipGraph.CheckOp;
+import org.piax.ov.ovs.skipgraph.SkipGraph.Op;
+
 import org.piax.trans.Node;
 import org.piax.trans.common.Id;
 import org.piax.trans.sim.SimTransportOracle;
 
 public class RKSkipGraph extends RRSkipGraph {
     public Comparable<?> rangeEnd;
+    public List<Node> containings;
     
     static public enum Arg {
-        MAX, RANGE
+        CONTAINED, CONTAININGS, RANGE,
     }
     static public enum Op {
-        FIND_MAX, FOUND_MAX
+        GET_CONTAININGS, FOUND_CONTAININGS, NOT_FOUND_CONTAININGS, GET_LEFT, RET_LEFT
     }
     
     public RKSkipGraph(Node self) {
         super(self);
         this.rangeEnd = (Comparable<?>)self.getAttr(OverlayManager.RANGE_END);
+        this.containings = new ArrayList<Node>();
     }
     
     public Comparable<?> getRangeEnd() {
         return rangeEnd;
     }
     
-    public Comparable<?> getMax() {
-        return (Comparable<?>)self.getAttr(OverlayManager.MAX);
+    public List<Node> getContainingList() {
+        return containings;
     }
     
-    public void setMax(Comparable<?> max) {
-        self.putAttr(OverlayManager.MAX, max);
+    public void setContainingList(List<Node> containings) {
+        this.containings = containings;
     }
     
     public Comparable<?> getRangeEnd(Node n) {
@@ -50,67 +56,46 @@ public class RKSkipGraph extends RRSkipGraph {
         return null;
     }
     
-    public Comparable<?> getMax(int side) {
-        if (side == R) {
-            Node r = neighbors.get(R, 0);
-            if (r == null) {
-                return getMax();
-            }
-            else {
-                return (getMax(r));
-            }
-        }
-        else {
-            Node l = neighbors.get(L, 0);
-            if (l == null) {
-                return KeyComparator.BOTTOM_VALUE;
-            }
-            else {
-                return (getMax(l));
-            }
-        }
+    private Map<Object,Object> getContainingsOp(Node v) {
+        return map((Object)SkipGraph.Arg.OP, (Object)Op.GET_CONTAININGS).map(SkipGraph.Arg.NODE, v);
     }
     
-    public Comparable<?> getMax(Node n) {
-        Comparable<?> ret = null;
-        if (n != null) {
-            ret = (Comparable<?>)n.getAttr(OverlayManager.MAX);
-        }
-        if (ret == null) {
-            return KeyComparator.BOTTOM_VALUE;
-        }
-        return ret;
+    private Map<Object,Object> updateContainingsOp(Node startNode, Range range, int level, boolean found, Node containing) {
+        return map((Object)SkipGraph.Arg.OP, (Object)RRSkipGraph.Op.RANGE_SEARCH).map(SkipGraph.Arg.NODE, startNode).map(RRSkipGraph.Arg.RANGE, range).map(SkipGraph.Arg.LEVEL, level).map(RRSkipGraph.Arg.FOUND, found).map(Arg.CONTAINED, containing);
     }
     
-    public void setMaxRangeEnd(Node n, Comparable<?> rangeEnd) {
-        n.putAttr(OverlayManager.MAX, rangeEnd);
+    private Map<Object,Object> foundContainingsOp(List<Node> containings) {
+        return map((Object)SkipGraph.Arg.OP, (Object)Op.FOUND_CONTAININGS).map(Arg.CONTAININGS, containings);
     }
     
-    private Map<Object,Object> findMaxOp(Node v, Comparable<?> max, int level) {
-        return map((Object)SkipGraph.Arg.OP, (Object)Op.FIND_MAX).map(SkipGraph.Arg.NODE, v).map(SkipGraph.Arg.LEVEL, level).map(Arg.MAX, max);
+    private Map<Object,Object> notFoundContainingsOp() {
+        return map((Object)SkipGraph.Arg.OP, (Object)Op.NOT_FOUND_CONTAININGS);
     }
     
-    private Map<Object,Object> updateMaxOp(Node startNode, Range range, int level, boolean found, Comparable<?> max) {
-        return map((Object)SkipGraph.Arg.OP, (Object)RRSkipGraph.Op.RANGE_SEARCH).map(SkipGraph.Arg.NODE, startNode).map(RRSkipGraph.Arg.RANGE, range).map(SkipGraph.Arg.LEVEL, level).map(RRSkipGraph.Arg.FOUND, found).map(Arg.MAX, max);
+    private Map<Object,Object> findOverlapOp(Node startNode, Range range, int level, Range searchRange) {
+        return map((Object)SkipGraph.Arg.OP, (Object)RRSkipGraph.Op.RANGE_SEARCH).map(SkipGraph.Arg.NODE, startNode).map(RRSkipGraph.Arg.RANGE, range).map(SkipGraph.Arg.LEVEL, level).map(Arg.RANGE, searchRange);
     }
     
-    private Map<Object,Object> findOverlapOp(Node startNode, Range range, int level, boolean found, Range searchRange) {
-        return map((Object)SkipGraph.Arg.OP, (Object)RRSkipGraph.Op.RANGE_SEARCH).map(SkipGraph.Arg.NODE, startNode).map(RRSkipGraph.Arg.RANGE, range).map(SkipGraph.Arg.LEVEL, level).map(RRSkipGraph.Arg.FOUND, found).map(Arg.RANGE, searchRange);
+    private Map<Object,Object> getLeftOp() {
+        return map((Object)SkipGraph.Arg.OP, (Object)Op.GET_LEFT);
     }
     
-    private Map<Object,Object> foundMaxOp(Node v) {
-        return map((Object)SkipGraph.Arg.OP, (Object)Op.FOUND_MAX).map(SkipGraph.Arg.NODE, v);
+    private Map<Object,Object> retLeftOp() {
+        return map((Object)SkipGraph.Arg.OP, (Object)Op.RET_LEFT).map(SkipGraph.Arg.NODE, neighbors.get(L, 0));
     }
     
     public void onReceive(Node sender, Map<Object,Object> mes) {
         Object op = mes.get(SkipGraph.Arg.OP);
-        if (op == Op.FIND_MAX) {
-            onReceiveFindMaxOp(sender, mes);
+        if (op == Op.GET_CONTAININGS) {
+            onReceiveGetContainingsOp(sender, mes);
+        }
+        else if (op == Op.GET_LEFT) {
+            onReceiveGetLeftOp(sender, mes);
         }
         else if (op == SkipGraph.Op.FOUND) {
             onReceiveSearchResult(sender, mes);
         }
-        else if (op == RRSkipGraph.Op.FOUND_IN_RANGE || op == RRSkipGraph.Op.NOT_FOUND_IN_RANGE)  {
+        else if (op == RRSkipGraph.Op.FOUND_IN_RANGE || op == RRSkipGraph.Op.NOT_FOUND_IN_RANGE || op == Op.FOUND_CONTAININGS)  {
             onReceiveRangeSearchResult(sender, mes);
         }
         else {
@@ -118,48 +103,23 @@ public class RKSkipGraph extends RRSkipGraph {
         }
     }
     
-    public void onReceiveFindMaxOp(Node sender, Map<Object,Object> args) {
-        Node startNode = (Node) args.get(SkipGraph.Arg.NODE);
-        int level = (int)((Integer)args.get(SkipGraph.Arg.LEVEL));
-        Comparable<?> max = (Comparable<?>)args.get(Arg.MAX);
-        List<Id> via = getVia(args);
+    protected void onReceiveGetLeftOp(Node sender, Map<Object, Object> args) {
         try {
-            if (compare(max, getMax(neighbors.get(R, 0))) < 0 && compare(max, getMax()) >= 0) {
-                startNode.send(setVia(foundMaxOp(self), via));
-            }
-            else if ((compare(max, getMax()) < 0 && compare(max, getMax(L)) < 0) ||
-                     (compare(max, getMax()) < 0 && compare(max, getMax(L)) > 0)) { // last one step.
-                while (level >= 0) {
-                    Node leftNode = neighbors.get(L, level);
-                    if (leftNode != null && ((compare(max, getMax()) < 0 && compare(max, getMax(leftNode)) < 0) ||
-                                             (compare(max, getMax()) < 0 && compare(max, getMax(leftNode)) > 0))) {
-                        neighbors.get(L, level).send(setVia(findMaxOp(startNode, max, level), via));
-                        break;
-                    }
-                    else {
-                        level--;
-                    }
-                }
-            }
-            else {
-                while (level >= 0) {
-                    Node rightNode = neighbors.get(R, level);
-                    if (rightNode != null && compare(max, getMax(rightNode)) >= 0) {
-                        neighbors.get(R, level).send(setVia(findMaxOp(startNode, max, level), via));
-                        break;
-                    }
-                    else {
-                        level--;
-                    }
-                }
-            }
-            if (level < 0) {
-                startNode.send(setVia(foundMaxOp(self), via));
-            }
-        }
-        catch (IOException e) {
+            sender.send(retLeftOp());
+        } catch (IOException e) {
             e.printStackTrace();
-        }
+        }     
+    }
+    
+    protected void onReceiveGetContainingsOp(Node sender, Map<Object, Object> args) {
+        try {
+            List<Node> ret = new ArrayList<Node>();
+            ret.addAll(containings);
+            ret.add(self);
+            sender.send(foundContainingsOp(ret));
+        } catch (IOException e) {
+            e.printStackTrace();
+        } 
     }
     
     private boolean rangeOverlaps(Range range1, Range range2) {
@@ -172,19 +132,29 @@ public class RKSkipGraph extends RRSkipGraph {
     protected void onRangeMatch(Node sender, Map<Object,Object> args) {
         Node startNode = (Node) args.get(SkipGraph.Arg.NODE);
         List<Id> via = getVia(args);
-        Comparable<?> max = (Comparable<?>) args.get(Arg.MAX);
+        Node contained = (Node) args.get(Arg.CONTAINED);
         Range searchRange = (Range) args.get(Arg.RANGE);
         try {
-            if (max != null) {
+            if (contained != null) {
                 //System.out.println("set max of " + key + ":" + getMax() + "->" + max);
-                setMax(max);
+                containings.add(contained);
             }
             if (searchRange != null) {
                 if (rangeOverlaps(searchRange, new Range(key, rangeEnd))) {
-                    startNode.send(setVia(foundInRangeOp(self), via));
+                    if (contained != null) {
+                        startNode.send(setVia(foundContainingsOp(containings), via));
+                    }
+                    else {
+                        startNode.send(setVia(foundInRangeOp(self), via));
+                    }
                 }
                 else {
-                    startNode.send(setVia(notFoundInRangeOp(self), via));
+                    if (contained != null) {
+                        startNode.send(setVia(notFoundContainingsOp(), via));
+                    }
+                    else {
+                        startNode.send(setVia(notFoundInRangeOp(self), via));
+                    }
                 }
                 return;
             }
@@ -195,13 +165,36 @@ public class RKSkipGraph extends RRSkipGraph {
         }
     }
     
+    protected class RKSearchResult extends SearchResult {
+        public List<Node> containings;
+        public List<List<Id>> cVias;
+        public RKSearchResult() {
+            super();
+            containings = new ArrayList<Node>();
+            cVias = new ArrayList<List<Id>>();
+        }
+        public void addContainings(List<Node> nodes) {
+            for (Node node : nodes) {
+                containings.add(node);
+            }
+        }
+        public void addContainingVia(List<Id> via) {
+            cVias.add(via);
+        }
+    }
+    RKSearchResult containingsResult;
+    
     protected void onReceiveRangeSearchResult(Node sender, Map<Object,Object> arg) {
-        RRSkipGraph.Op op = (RRSkipGraph.Op) arg.get(SkipGraph.Arg.OP);
+        Object op = arg.get(SkipGraph.Arg.OP);
         List<Id> via = getVia(arg);
         Node node = (Node) arg.get(SkipGraph.Arg.NODE);
+        List<Node> containings = (List<Node>) arg.get(Arg.CONTAININGS);
         if (op == RRSkipGraph.Op.FOUND_IN_RANGE){
             rangeSearchResult.addMatch(node);
             rangeSearchResult.addMatchVia(via);
+        }
+        if (op == Op.FOUND_CONTAININGS) {
+            rangeSearchResult.addContainings(containings);
         }
         else {
             rangeSearchResult.addUnmatch(node);
@@ -210,50 +203,7 @@ public class RKSkipGraph extends RRSkipGraph {
     }
     
     SkipGraph.SearchResult searchResult;
-    SearchResult rangeSearchResult;
-    
-    public List<Node> updateMax(Range range, Comparable<?> max, List<Id> via) {
-        rangeSearchResult = new SearchResult();
-        onReceiveRangeSearchOp(self, setVia(updateMaxOp(self, range, getMaxLevel(), false, max), via));
-        synchronized(rangeSearchResult) {
-            try {
-                rangeSearchResult.wait(50);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-        Collections.sort(rangeSearchResult.matches, new KeySortComparator());
-        return rangeSearchResult.matches;
-    }
-    
-    public List<Node> findOverlap(Range range, Range searchRange, List<Id> via) {
-        self.trans.setParameter(SimTransportOracle.Param.NestedWait, Boolean.FALSE); // for better performance
-        rangeSearchResult = new SearchResult();
-        onReceiveRangeSearchOp(self, setVia(findOverlapOp(self, range, getMaxLevel(), false, searchRange), via));
-        synchronized(rangeSearchResult) {
-            try {
-                rangeSearchResult.wait(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-        Collections.sort(rangeSearchResult.matches, new KeySortComparator());
-        int hopSum = 0;
-        for (List<Id> v : rangeSearchResult.mVias) {
-            hopSum += v.size();
-        }
-        if (rangeSearchResult.mVias.size() != 0) { 
-            System.out.println("Matches= " + rangeSearchResult.mVias.size() + ", Ave. hops=" + (hopSum / (double)rangeSearchResult.mVias.size()));
-        }
-        hopSum = 0;
-        for (List<Id> v : rangeSearchResult.uVias) {
-            hopSum += v.size();
-        }
-        if (rangeSearchResult.uVias.size() != 0) {
-            System.out.println("Unmatches= " + rangeSearchResult.uVias.size() + ", Ave. hops=" + (hopSum / (double)rangeSearchResult.uVias.size()));
-        }
-        return rangeSearchResult.matches;
-    }
+    RKSearchResult rangeSearchResult;
     
     @Override
     public List<Node> overlapSearch(Comparable<?> key) {
@@ -263,16 +213,46 @@ public class RKSkipGraph extends RRSkipGraph {
     @Override
     public List<Node> overlapSearch(Range range) {
         self.trans.setParameter(SimTransportOracle.Param.NestedWait, Boolean.FALSE); // for better performance
-        try {
-            Map<Object, Object> found = self.sendAndWait(findMaxOp(self, range.min, getMaxLevel()), new CheckOp(Op.FOUND_MAX));
-            Node x = (Node) found.get(SkipGraph.Arg.NODE);
-            List<Id> via = getVia(found);
-            if (self != x) {
-                Range cr = new Range(getKey(x), range.max);
-                if (compare(cr.min, cr.max) != 0) {
-                    cr.includeMin = false;
+        rangeSearchResult = new RKSearchResult();
+        onReceiveRangeSearchOp(self, rangeSearchOp(self, range, getMaxLevel(), false));
+        synchronized(rangeSearchResult) {
+            try {
+                rangeSearchResult.wait(50);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        Node leftMax = findLeftMax(self, range.min);
+        if (leftMax != null) {
+            Map<Object, Object> mes;
+            try {
+                mes = leftMax.sendAndWait(getContainingsOp(self), new CheckOp(Op.FOUND_CONTAININGS));
+                for (Node containing : (List<Node>)mes.get(Arg.CONTAININGS)) {
+                    if (rangeOverlaps(new Range(getKey(containing), getRangeEnd(containing)), range)) {
+                        rangeSearchResult.matches.add(containing);
+                    }
                 }
-                return findOverlap(cr, range, via);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        Collections.sort(rangeSearchResult.matches, new KeySortComparator());
+        return rangeSearchResult.matches;
+    }
+    
+    private Node findLeftMax(Node introducer, Comparable<?> key) {
+        try {
+            Map<Object,Object> mr = introducer.sendAndWait(getMaxLevelOp(), new CheckOp(SkipGraph.Op.RET_MAX_LEVEL));
+            int maxLevel = (Integer)mr.get(SkipGraph.Arg.LEVEL);
+            Map<Object, Object> sr = introducer.sendAndWait(searchOp(self, key, maxLevel - 1), new CheckOp(SkipGraph.Op.NOT_FOUND, SkipGraph.Op.FOUND));
+            Node neighbor = (Node)sr.get(SkipGraph.Arg.NODE);
+            System.out.println("NEIGHBOR=" + neighbor);
+            if (neighbor != null && compare(key, getKey(neighbor)) < 0) {
+                Map<Object, Object> mes = neighbor.sendAndWait(getLeftOp(), new CheckOp(Op.RET_LEFT));
+                return (Node)mes.get(SkipGraph.Arg.NODE);
+            }
+            else {
+                return neighbor;
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -289,7 +269,7 @@ public class RKSkipGraph extends RRSkipGraph {
     @Override
     public List<Node> search(Range range) {
         self.trans.setParameter(SimTransportOracle.Param.NestedWait, Boolean.FALSE); // for better performance
-        rangeSearchResult = new SearchResult();
+        rangeSearchResult = new RKSearchResult();
         onReceiveRangeSearchOp(self, rangeSearchOp(self, range, getMaxLevel(), false));
         synchronized(rangeSearchResult) {
             try {
@@ -305,36 +285,43 @@ public class RKSkipGraph extends RRSkipGraph {
     @Override
     public void insert(Node introducer) {
         self.trans.setParameter(SimTransportOracle.Param.NestedWait, Boolean.FALSE); // for better performance
-        super.insert(introducer);
         // seed.
-        if (neighbors.get(L, 0) == null && neighbors.get(R, 0) == null) {
-            setMax(rangeEnd);
-            return;
-        }
-        if (compare(rangeEnd, getMax(neighbors.get(L, 0))) > 0) {
-            setMax(rangeEnd);
-            // left side is less than self. update right side.
-            try {
-                Map<Object, Object> found = self.sendAndWait(findMaxOp(self, rangeEnd, getMaxLevel()), new CheckOp(Op.FOUND_MAX));
-                Node x = (Node) found.get(SkipGraph.Arg.NODE);
-                List<Id> via = getVia(found);
-                if (self != x) {
-                    List<Node> updated = updateMax(new Range(key, getKey(x)), getMax(), via);
+        //super.insert(introducer);
+        rangeSearchResult = new RKSearchResult();
+        Range range = new Range(getKey(), getRangeEnd());
+        try {
+            if (!introducer.equals(self)) {
+                Node leftMax = findLeftMax(introducer, getKey());
+                System.out.println("KEY=" + getKey() + ", LEFT MAX=" + leftMax);
+                if (leftMax != null) {
+                    Map<Object, Object> mes;
+                    mes = leftMax.sendAndWait(getContainingsOp(self), new CheckOp(Op.FOUND_CONTAININGS));
+                    rangeSearchResult.addContainings((List<Node>)mes.get(Arg.CONTAININGS));
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
+            }
+            super.insert(introducer);
+            if (!introducer.equals(self)) {
+                self.send(updateContainingsOp(self, range, getMaxLevel(), false, self));
+                synchronized(rangeSearchResult) {
+                    try {
+                        rangeSearchResult.wait(50);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
             }
         }
-        else {
-            // left side is greater than self. Just update self.
-            setMax(getMax(neighbors.get(L, 0)));
+        catch (IOException e) {
+            e.printStackTrace();
         }
+        containings = rangeSearchResult.containings;
+        System.out.println(range + ", CONTAININGS=" + containings);
     }
     
     @Override
     public void delete() {
         super.delete();
-        // update max? or leave 'em alone.
+        // XXX not implemented yet.
     }
     
 }

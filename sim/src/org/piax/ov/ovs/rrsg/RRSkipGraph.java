@@ -92,12 +92,6 @@ public class RRSkipGraph extends SkipGraph {
         }
     }
 	
-	public class KeySortComparator implements Comparator {  
-        public int compare(Object arg0, Object arg1) {  
-            return KeyComparator.getInstance().compare((Comparable<?>)((Node)arg0).getAttr(OverlayManager.KEY), (Comparable<?>)((Node)arg1).getAttr(OverlayManager.KEY));
-        }  
-    }
-	
 	public List<Node> search(Range range) {
 		self.trans.setParameter(SimTransportOracle.Param.NestedWait, Boolean.FALSE); // for better performance
         searchResult = new SearchResult();

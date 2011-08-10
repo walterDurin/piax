@@ -8,6 +8,8 @@ import org.piax.trans.sim.SimTransport;
 public class ISGSample {
     static public void main(String args[]) {
         OverlayManager.setOverlay("org.piax.ov.ovs.rksg.RKSkipGraph");
+        //OverlayManager.setOverlay("org.piax.ov.ovs.isg.ISkipGraph");
+        //OverlayManager.setOverlay("org.piax.ov.ovs.risg.RISkipGraph");
 
         SimTransport seedTrans = new SimTransport();
         OverlayManager seedOv = new OverlayManager(seedTrans);
