@@ -18,7 +18,8 @@ public class ISGSample {
         OverlayManager start = null;
         double searchKey = 6;
         double startKey = 7;
-        int[] nums = {7, 2, 6, 5, 4, 3, 1};
+        //int[] nums = {7, 2, 6, 5, 4, 3, 1};
+        int[] nums = {1, 2, 3, 4, 5, 6, 7};
         
         for (int i : nums) {
             SimTransport trans = new SimTransport();

@@ -13,8 +13,9 @@ public class EvalRkSg {
     
     
     static public void eval(int num, double searchKey, double startKey, double yure, boolean skewed) {
-        //OverlayManager.setOverlay("org.piax.ov.ovs.rksg.RKSkipGraph");
-        OverlayManager.setOverlay("org.piax.ov.ovs.isg.ISkipGraph");
+        OverlayManager.setOverlay("org.piax.ov.ovs.rksg.RKSkipGraph");
+        //OverlayManager.setOverlay("org.piax.ov.ovs.isg.ISkipGraph");
+        
 
         System.out.println("searchKey=" + searchKey + ",startKey=" + startKey);
         SimTransport seedTrans = new SimTransport();
