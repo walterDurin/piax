@@ -114,6 +114,7 @@ public class RKSkipGraph extends RRSkipGraph {
     protected void onReceiveGetContainingsOp(Node sender, Map<Object, Object> args) {
         try {
             Range range = (Range) args.get(Arg.RANGE);
+            List<Id> via = getVia(args);
             List<Node> ret = new ArrayList<Node>();
             for (Node node : containings) {
                 if (rangeOverlaps(range, new Range(getKey(node), getRangeEnd(node)))) {
@@ -123,7 +124,7 @@ public class RKSkipGraph extends RRSkipGraph {
             if (rangeOverlaps(range, new Range(getKey(), getRangeEnd()))) {
                 ret.add(self);
             }
-            sender.send(foundContainingsOp(ret));
+            sender.send(setVia(foundContainingsOp(ret), via));
         } catch (IOException e) {
             e.printStackTrace();
         } 
@@ -229,17 +230,28 @@ public class RKSkipGraph extends RRSkipGraph {
                 e.printStackTrace();
             }
         }
-        Node leftMax = findLeftMax(self, range.min);
+        Map<Object,Object> ret = findLeftMax(self, range.min);
+        Node leftMax = (Node) ret.get(SkipGraph.Arg.NODE);
+        List<Id> via = getVia(ret);
         if (leftMax != null) {
             Map<Object, Object> mes;
             try {
-                mes = leftMax.sendAndWait(getContainingsOp(self, range), new CheckOp(Op.FOUND_CONTAININGS));
+                mes = leftMax.sendAndWait(setVia(getContainingsOp(self, range), via), new CheckOp(Op.FOUND_CONTAININGS));
                 if (mes != null) {
+                    
                     for (Node containing : (List<Node>)mes.get(Arg.CONTAININGS)) {
                         if (rangeOverlaps(new Range(getKey(containing), getRangeEnd(containing)), range)) {
                             rangeSearchResult.matches.add(containing);
+                            rangeSearchResult.mVias.add(getVia(mes));
                         }
                     }
+                }
+                int hopSum = 0;
+                for (List<Id> v : rangeSearchResult.mVias) {
+                    hopSum += v.size();
+                }
+                if (rangeSearchResult.mVias.size() != 0) { 
+                    System.out.println("Matches= " + rangeSearchResult.mVias.size() + ", Ave. hops=" + (hopSum / (double)rangeSearchResult.mVias.size()));
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -249,7 +261,7 @@ public class RKSkipGraph extends RRSkipGraph {
         return rangeSearchResult.matches;
     }
     
-    private Node findLeftMax(Node introducer, Comparable<?> key) {
+    private Map<Object,Object> findLeftMax(Node introducer, Comparable<?> key) {
         try {
             Map<Object,Object> mr = introducer.sendAndWait(getMaxLevelOp(), new CheckOp(SkipGraph.Op.RET_MAX_LEVEL));
             int maxLevel = (Integer)mr.get(SkipGraph.Arg.LEVEL);
@@ -258,10 +270,10 @@ public class RKSkipGraph extends RRSkipGraph {
             //System.out.println("NEIGHBOR=" + neighbor);
             if (neighbor != null && compare(key, getKey(neighbor)) < 0) {
                 Map<Object, Object> mes = neighbor.sendAndWait(getLeftOp(), new CheckOp(Op.RET_LEFT));
-                return (Node)mes.get(SkipGraph.Arg.NODE);
+                return mes;//(Node)mes.get(SkipGraph.Arg.NODE);
             }
             else {
-                return neighbor;
+                return sr;//neighbor;
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -300,11 +312,13 @@ public class RKSkipGraph extends RRSkipGraph {
         Range range = new Range(getKey(), getRangeEnd());
         try {
             if (!introducer.equals(self)) {
-                Node leftMax = findLeftMax(introducer, getKey());
+                Map<Object,Object> ret = findLeftMax(introducer, getKey());
+                Node leftMax = (Node) ret.get(SkipGraph.Arg.NODE);
                 //System.out.println("KEY=" + getKey() + ", LEFT MAX=" + leftMax);
                 if (leftMax != null) {
                     Map<Object, Object> mes = leftMax.sendAndWait(getContainingsOp(self, range), new CheckOp(Op.FOUND_CONTAININGS));
                     rangeSearchResult.addContainings((List<Node>)mes.get(Arg.CONTAININGS));
+                    rangeSearchResult.mVias.add(getVia(mes));
                 }
             }
             super.insert(introducer);
