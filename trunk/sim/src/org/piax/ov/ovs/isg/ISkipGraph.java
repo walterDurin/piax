@@ -212,6 +212,11 @@ public class ISkipGraph extends SRRSkipGraph {
             // TODO Auto-generated catch block
             e1.printStackTrace();
         }
+        if (ret != null) {
+            List<Id> retVia = getVia(ret);
+            List<Node> matches = (List<Node>)ret.get(SRRSkipGraph.Arg.MATCHES);
+            System.out.println("Matches= " + matches.size() + ", hops=" + retVia.size());
+        }
         return ret == null ? null : (List<Node>)ret.get(SRRSkipGraph.Arg.MATCHES);
     }
     

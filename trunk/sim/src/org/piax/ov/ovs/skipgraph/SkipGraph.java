@@ -30,6 +30,8 @@ public class SkipGraph implements Overlay {
 
     public NeighborTable neighbors;
     public boolean deleteFlag;
+    
+    static public boolean BOUNCE = false;
 
     static public enum Op {
         SEARCH, FOUND, NOT_FOUND, NEIGHBOR, BUDDY, 
@@ -184,7 +186,7 @@ public class SkipGraph implements Overlay {
         return map((Object)Arg.OP, (Object)Op.SEARCH).map(Arg.NODE, startNode).map(OverlayManager.KEY, searchKey).map(Arg.LEVEL, level);
     }
     
-    private Map<Object,Object> foundOp(Node v) {
+    protected Map<Object,Object> foundOp(Node v) {
         return map((Object)Arg.OP, (Object)Op.FOUND).map(Arg.NODE, v);
     }
 
@@ -347,7 +349,7 @@ public class SkipGraph implements Overlay {
     protected void onReceiveSearchOp(Node sender, Map<Object,Object> args) {
         Node startNode = (Node) args.get(Arg.NODE);
         Comparable<?> searchKey = (Comparable<?>) args.get(OverlayManager.KEY);
-        int level = (int)((Integer)args.get(Arg.LEVEL));
+        int level = BOUNCE ? getMaxLevel() : (int)((Integer)args.get(Arg.LEVEL));
         List<Id> via = getVia(args);
         try {
             if (compare(key,searchKey) == 0) {
