@@ -238,7 +238,7 @@ public class RKSkipGraph extends RRSkipGraph {
             try {
                 mes = leftMax.sendAndWait(setVia(getContainingsOp(self, range), via), new CheckOp(Op.FOUND_CONTAININGS));
                 if (mes != null) {
-                    
+                    // XXX not reached.
                     for (Node containing : (List<Node>)mes.get(Arg.CONTAININGS)) {
                         if (rangeOverlaps(new Range(getKey(containing), getRangeEnd(containing)), range)) {
                             rangeSearchResult.matches.add(containing);
@@ -270,11 +270,12 @@ public class RKSkipGraph extends RRSkipGraph {
             //System.out.println("NEIGHBOR=" + neighbor);
             if (neighbor != null && compare(key, getKey(neighbor)) < 0) {
                 Map<Object, Object> mes = neighbor.sendAndWait(getLeftOp(), new CheckOp(Op.RET_LEFT));
-                return mes;//(Node)mes.get(SkipGraph.Arg.NODE);
+                Node leftMax = (Node) mes.get(SkipGraph.Arg.NODE);
+                if (leftMax != null) { // If null, left most node.
+                    return mes;//(Node)mes.get(SkipGraph.Arg.NODE);
+                }
             }
-            else {
-                return sr;//neighbor;
-            }
+            return sr;//neighbor;
         } catch (IOException e) {
             e.printStackTrace();
         }
