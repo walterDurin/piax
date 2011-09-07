@@ -24,9 +24,16 @@ public class OverlayManager implements ReceiveListener {
     public static String KEY = "key";
     public static String RANGE_END = "rangeEnd";
     public static String MAX = "max";
+    // XXX attributes for CASkipGraph;
+    public static String CONNECTIVITY = "connectivity";
+    public static String NETWORK = "network";
 
     static public void setOverlay(String name){
         ovClass = name;
+    }
+
+    static public String getOverlay(){
+        return ovClass;
     }
 
     private void setupOverlay() {

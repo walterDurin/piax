@@ -6,6 +6,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
+import org.grlea.log.SimpleLogger;
 import org.piax.ov.Overlay;
 import org.piax.ov.OverlayManager;
 import org.piax.ov.common.KeyComparator;
@@ -18,7 +19,7 @@ import org.piax.trans.sim.SimTransportOracle;
 import static org.piax.trans.Literals.map;
 
 public class SkipGraph implements Overlay {
-
+    SimpleLogger log = new SimpleLogger(SkipGraph.class);
     public MembershipVector m;  // Membership vector
     public Node self;
 
@@ -127,7 +128,7 @@ public class SkipGraph implements Overlay {
     protected void onReceiveSearchResult(Node sender, Map<Object,Object> arg) {
         searchResult.result = (Op) arg.get(Arg.OP);
         List<Id> via = getVia(arg);
-        System.out.println("search hops =" + (via == null ? 0 : via.size()));
+        log.info("search hops =" + (via == null ? 0 : via.size()));
         if (searchResult.result == Op.FOUND){
             searchResult.node = (Node) arg.get(Arg.NODE);
         }

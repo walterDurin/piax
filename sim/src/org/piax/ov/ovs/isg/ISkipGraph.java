@@ -233,6 +233,7 @@ public class ISkipGraph extends SRRSkipGraph {
             Node x = (Node) found.get(SkipGraph.Arg.NODE);
             List<Id> via = getVia(found);
             if (self != x) {
+                //System.out.println("***" + getKey(x) + "-" + range.max);
                 Range cr = new Range(getKey(x), range.max);
                 if (compare(cr.min, cr.max) != 0) {
                     cr.includeMin = false;

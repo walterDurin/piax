@@ -256,7 +256,7 @@ public class RISkipGraph extends RRSkipGraph {
             hopSum += v.size();
         }
         if (rangeSearchResult.uVias.size() != 0) {
-            System.out.println("Unmatches= " + rangeSearchResult.uVias.size() + ", Ave. hops=" + (hopSum / (double)rangeSearchResult.uVias.size()));
+            //System.out.println("Unmatches= " + rangeSearchResult.uVias.size() + ", Ave. hops=" + (hopSum / (double)rangeSearchResult.uVias.size()));
         }
         return rangeSearchResult.matches;
     }
