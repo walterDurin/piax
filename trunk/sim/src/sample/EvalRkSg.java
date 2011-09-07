@@ -13,7 +13,8 @@ public class EvalRkSg {
     
     
     static public void eval(int num, double searchKey, double startKey, double yure, boolean skewed) {
-        OverlayManager.setOverlay("org.piax.ov.ovs.rksg.RKSkipGraph");
+        //OverlayManager.setOverlay("org.piax.ov.ovs.rksg.RKSkipGraph");
+        OverlayManager.setOverlay("org.piax.ov.ovs.risg.RISkipGraph");
         //OverlayManager.setOverlay("org.piax.ov.ovs.isg.ISkipGraph");
         
 
@@ -64,27 +65,29 @@ public class EvalRkSg {
     static public void main(String[] args) {
         double searchKey = 900;
         double startKey = 100.0;
+        boolean EVAL_RANGE = true;
 
-        if (false) {
+        if (EVAL_RANGE) {
             for (int i = 0; i <= 20; i++) {
-                System.out.println("--\nrange=" + (i * 10));
-                eval(1000, searchKey, startKey, i * 10, true);
+                System.out.println("--\nrange=" + (i * 100));
+                eval(10000, searchKey, startKey, i * 100, true);
                 System.out.println("--");
-                eval(1000, searchKey, startKey, i * 10, false);
+                eval(10000, searchKey, startKey, i * 100, false);
             }
         }
-        
-        for (int i = 1; i <= 10; i++) {
-            System.out.println("--\nNUM=" + (i * 10));
-            eval(i * 10 , i * 10 * 9 / 10, 0, 10, true);
-            System.out.println("--");
-            eval(i * 10 , i * 10 * 9 / 10, 0, 10, false);
-        }
-        for (int i = 1; i <= 10; i++) {
-            System.out.println("--\nNUM=" + (i * 100));
-            eval(i * 100, i * 100 * 9 / 10, 0, 10, true);
-            System.out.println("--");
-            eval(i * 100, i * 100 * 9 / 10, 0, 10, false);
+        else {
+            for (int i = 1; i <= 10; i++) {
+                System.out.println("--\nNUM=" + (i * 10) + ",RANGE=" + (i * 10 * 3 / 10));
+                eval(i * 10 , i * 10 * 9 / 10, 0, i * 10 * 3 / 10, true);
+                System.out.println("--");
+                eval(i * 10 , i * 10 * 9 / 10, 0, i * 10 * 3 / 10, false);
+            }
+            for (int i = 1; i <= 10; i++) {
+                System.out.println("--\nNUM=" + (i * 100) + ",RANGE=" + (i * 100 * 3 / 10));
+                eval(i * 100, i * 100 * 9 / 10, 0, i * 100 * 3 / 10, true);
+                System.out.println("--");
+                eval(i * 100, i * 100 * 9 / 10, 0, i * 100 * 3 / 10, false);
+            }
         }
         
     }

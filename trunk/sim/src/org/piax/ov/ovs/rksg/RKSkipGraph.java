@@ -183,7 +183,9 @@ public class RKSkipGraph extends RRSkipGraph {
         }
         public void addContainings(List<Node> nodes) {
             for (Node node : nodes) {
-                containings.add(node);
+                if (!containings.contains(node)) {
+                    containings.add(node);
+                }
             }
         }
         public void addContainingVia(List<Id> via) {
@@ -225,7 +227,7 @@ public class RKSkipGraph extends RRSkipGraph {
         onReceiveRangeSearchOp(self, rangeSearchOp(self, range, getMaxLevel(), false));
         synchronized(rangeSearchResult) {
             try {
-                rangeSearchResult.wait(50);
+                rangeSearchResult.wait(100);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -239,10 +241,21 @@ public class RKSkipGraph extends RRSkipGraph {
                 mes = leftMax.sendAndWait(setVia(getContainingsOp(self, range), via), new CheckOp(Op.FOUND_CONTAININGS));
                 if (mes != null) {
                     // XXX not reached.
+                    via = getVia(mes);
                     for (Node containing : (List<Node>)mes.get(Arg.CONTAININGS)) {
                         if (rangeOverlaps(new Range(getKey(containing), getRangeEnd(containing)), range)) {
-                            rangeSearchResult.matches.add(containing);
-                            rangeSearchResult.mVias.add(getVia(mes));
+                            if (!rangeSearchResult.matches.contains(containing)) {
+                                containing.send(setVia(rangeSearchOp(self, new Range(getKey(containing), getKey(containing)), getMaxLevel(), false), via));
+                                //rangeSearchResult.matches.add(containing);
+                                //rangeSearchResult.mVias.add(getVia(mes));
+                                synchronized(rangeSearchResult) {
+                                    try {
+                                        rangeSearchResult.wait(100);
+                                    } catch (InterruptedException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                            }
                         }
                     }
                 }

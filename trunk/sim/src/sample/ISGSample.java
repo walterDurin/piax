@@ -56,7 +56,7 @@ public class ISGSample {
         System.out.println("--- end dump ---");
         
         System.out.println("--- search " + searchKey + " from " + startKey + "---");
-        System.out.println("search result=" + start.overlapSearch((double)13));
+        System.out.println("search result=" + start.overlapSearch((double)20));
         System.out.println("--- delete " + startKey + "---");
         start.delete();
 

@@ -33,7 +33,7 @@ public class RrSgSim {
         //trans.dump();
         System.out.println("--- search " + searchKey + " from " + startKey + "---");
         System.out.println("search result=" + start.search(new Range((double)searchKey, (double)searchKey + 100)));
-        System.out.println("search result=" + start.search(new Range((double)10.5, (double)11.6)));
+        System.out.println("search result=" + start.search(new Range((double)10, (double)11.6)));
         System.out.println("--- delete " + startKey + "---");
         start.delete();
         //System.out.println("--- dump ---");
