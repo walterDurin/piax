@@ -9,12 +9,12 @@ import org.piax.trans.common.Id;
 
 public class NeighborTable {
     
-    class LevelPair {
+    public class LevelPair {
         public Node left;
         public Node right;
     }
     
-    ArrayList<LevelPair> skipTable;
+    public ArrayList<LevelPair> skipTable;
     Comparable<?> key;
     public NeighborTable (Comparable<?> key) {
         this.key = key;

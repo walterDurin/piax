@@ -12,15 +12,15 @@ public class SgSim {
         MembershipVector.ALPHABET = 3;
         SimpleLogger log = new SimpleLogger(SgSim.class);
 
-        for (int j = 0; j < 100; j++) {
+        for (int j = 0; j < 10; j++) {
         SimTransport seedTrans = new SimTransport();
         OverlayManager seedOv = new OverlayManager(seedTrans);
         seedOv.putKey(0);
 
         OverlayManager start = null;
-        int searchKey = 100000;
-        int startKey = 9900000;
-        int numberOfNodes = 10000000;
+        int searchKey = 10;
+        int startKey = 990;
+        int numberOfNodes = 1000;
         log.info("start");
         for (int i = numberOfNodes; i > 0; i--) {
             SimTransport trans = new SimTransport();
@@ -37,14 +37,9 @@ public class SgSim {
             System.gc();
             }
         }
-        //System.out.println("--- dump ---");
-        //trans.dump();
-
-        log.info("--- search " + searchKey + " from " + startKey + "---");
-        org.piax.ov.ovs.skipgraph.SkipGraph.BOUNCE = false;
-        log.info("search result=" + start.search(searchKey));
-        log.info("--- bouncing search " + searchKey + " from " + startKey + "---");
+        
         org.piax.ov.ovs.skipgraph.SkipGraph.BOUNCE = true;
+        start.send(searchKey, "Hello " + searchKey);
         log.info("search result=" + start.search(searchKey));
         //ps.println("--- delete " + startKey + "---");
         //start.delete();

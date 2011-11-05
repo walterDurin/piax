@@ -7,16 +7,20 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.grlea.log.SimpleLogger;
 import org.piax.ov.OverlayManager;
 import org.piax.ov.common.KeyComparator;
 import org.piax.ov.common.Range;
+import org.piax.ov.ovs.rksg.RKSkipGraph;
 import org.piax.ov.ovs.rrsg.RRSkipGraph;
 import org.piax.ov.ovs.skipgraph.SkipGraph;
 import org.piax.trans.Node;
 import org.piax.trans.common.Id;
+import org.piax.trans.sim.SimTransport;
 import org.piax.trans.sim.SimTransportOracle;
 
 public class RISkipGraph extends RRSkipGraph {
+    SimpleLogger log = new SimpleLogger(RISkipGraph.class);
     public Comparable<?> rangeEnd;
     
     static public enum Arg {
@@ -90,12 +94,16 @@ public class RISkipGraph extends RRSkipGraph {
         return map((Object)SkipGraph.Arg.OP, (Object)Op.FIND_MAX).map(SkipGraph.Arg.NODE, v).map(SkipGraph.Arg.LEVEL, level).map(Arg.MAX, max);
     }
     
-    private Map<Object,Object> updateMaxOp(Node startNode, Range range, int level, boolean found, Comparable<?> max) {
-        return map((Object)SkipGraph.Arg.OP, (Object)RRSkipGraph.Op.RANGE_SEARCH).map(SkipGraph.Arg.NODE, startNode).map(RRSkipGraph.Arg.RANGE, range).map(SkipGraph.Arg.LEVEL, level).map(RRSkipGraph.Arg.FOUND, found).map(Arg.MAX, max);
+    private Map<Object,Object> updateMaxOp(Node startNode, Range range, int level, Comparable<?> max) {
+        return map((Object)SkipGraph.Arg.OP, (Object)RRSkipGraph.Op.RANGE_SEARCH).map(SkipGraph.Arg.NODE, startNode).map(RRSkipGraph.Arg.RANGE, range).map(SkipGraph.Arg.LEVEL, level).map(Arg.MAX, max);
     }
     
-    private Map<Object,Object> findOverlapOp(Node startNode, Range range, int level, boolean found, Range searchRange) {
-        return map((Object)SkipGraph.Arg.OP, (Object)RRSkipGraph.Op.RANGE_SEARCH).map(SkipGraph.Arg.NODE, startNode).map(RRSkipGraph.Arg.RANGE, range).map(SkipGraph.Arg.LEVEL, level).map(RRSkipGraph.Arg.FOUND, found).map(Arg.RANGE, searchRange);
+    private Map<Object,Object> findOverlapOp(Node startNode, Range range, int level, Range searchRange) {
+        return map((Object)SkipGraph.Arg.OP, (Object)RRSkipGraph.Op.RANGE_SEARCH).map(SkipGraph.Arg.NODE, startNode).map(RRSkipGraph.Arg.RANGE, range).map(SkipGraph.Arg.LEVEL, level).map(Arg.RANGE, searchRange);
+    }
+    
+    private Map<Object,Object> findOverlapOp(Range range, int level, Range searchRange, Object body) {
+        return map((Object)SkipGraph.Arg.OP, (Object)RRSkipGraph.Op.RANGE_SEARCH).map(RRSkipGraph.Arg.RANGE, range).map(SkipGraph.Arg.LEVEL, level).map(Arg.RANGE, searchRange).map(SkipGraph.Arg.BODY, body);
     }
     
     private Map<Object,Object> foundMaxOp(Node v) {
@@ -125,7 +133,14 @@ public class RISkipGraph extends RRSkipGraph {
         List<Id> via = getVia(args);
         try {
             if (compare(max, getMax(neighbors.get(R, 0))) < 0 && compare(max, getMax()) >= 0) {
-                startNode.send(setVia(foundMaxOp(self), via));
+                // XXX don't send to startNode...
+                //if (false) {
+                    startNode.send(setVia(foundMaxOp(self), via));
+                //}
+                //else {
+                    
+                //}
+
             }
             else if ((compare(max, getMax()) < 0 && compare(max, getMax(L)) < 0) ||
                      (compare(max, getMax()) < 0 && compare(max, getMax(L)) > 0)) { // last one step.
@@ -174,6 +189,7 @@ public class RISkipGraph extends RRSkipGraph {
         List<Id> via = getVia(args);
         Comparable<?> max = (Comparable<?>) args.get(Arg.MAX);
         Range searchRange = (Range) args.get(Arg.RANGE);
+        Object body = args.get(SkipGraph.Arg.BODY);
         try {
             if (max != null) {
                 //System.out.println("set max of " + key + ":" + getMax() + "->" + max);
@@ -181,10 +197,17 @@ public class RISkipGraph extends RRSkipGraph {
             }
             if (searchRange != null) {
                 if (rangeOverlaps(searchRange, new Range(key, rangeEnd))) {
-                    startNode.send(setVia(foundInRangeOp(self), via));
+                    if (body != null) {
+                        inspectObject(body, self, args);
+                    }
+                    else {
+                        startNode.send(setVia(foundInRangeOp(self), via));
+                    }
                 }
                 else {
-                    startNode.send(setVia(notFoundInRangeOp(self), via));
+                    if (body == null) {
+                        startNode.send(setVia(notFoundInRangeOp(self), via));
+                    }
                 }
                 return;
             }
@@ -214,7 +237,7 @@ public class RISkipGraph extends RRSkipGraph {
     
     public List<Node> updateMax(Range range, Comparable<?> max, List<Id> via) {
         rangeSearchResult = new SearchResult();
-        onReceiveRangeSearchOp(self, setVia(updateMaxOp(self, range, getMaxLevel(), false, max), via));
+        onReceiveRangeSearchOp(self, setVia(updateMaxOp(self, range, getMaxLevel(), max), via));
         synchronized(rangeSearchResult) {
             try {
                 rangeSearchResult.wait(50);
@@ -226,12 +249,23 @@ public class RISkipGraph extends RRSkipGraph {
         return rangeSearchResult.matches;
     }
     
+    protected void findOverlap(Node start, Range range, Range searchRange, List<Id> via, Object body) {
+        self.trans.setParameter(SimTransportOracle.Param.NestedWait, Boolean.FALSE); // for better performance
+        //onReceiveRangeSearchOp(self, setVia(findOverlapOp(self, range, getMaxLevel(), false, searchRange), via));
+        try {
+            start.send(setVia(findOverlapOp(range, getMaxLevel(), searchRange, body), via));
+        } catch (IOException e1) {
+            // TODO Auto-generated catch block
+            e1.printStackTrace();
+        }
+    }
+    
     public List<Node> findOverlap(Node start, Range range, Range searchRange, List<Id> via) {
         self.trans.setParameter(SimTransportOracle.Param.NestedWait, Boolean.FALSE); // for better performance
         rangeSearchResult = new SearchResult();
         //onReceiveRangeSearchOp(self, setVia(findOverlapOp(self, range, getMaxLevel(), false, searchRange), via));
         try {
-            start.send(setVia(findOverlapOp(self, range, getMaxLevel(), false, searchRange), via));
+            start.send(setVia(findOverlapOp(self, range, getMaxLevel(), searchRange), via));
         } catch (IOException e1) {
             // TODO Auto-generated catch block
             e1.printStackTrace();
@@ -287,6 +321,27 @@ public class RISkipGraph extends RRSkipGraph {
     }
     
     @Override
+    public void overlapSend(Range range, Object body) {
+        self.trans.setParameter(SimTransportOracle.Param.NestedWait, Boolean.FALSE); // for better performance
+        //System.out.println(((SimTransport)self.trans) + ":1OUT=" + ((SimTransport)self.trans).out);
+        try {
+            Map<Object, Object> found = self.sendAndWait(findMaxOp(self, range.min, getMaxLevel()), new CheckOp(Op.FOUND_MAX));
+            Node x = (Node) found.get(SkipGraph.Arg.NODE);
+            List<Id> via = getVia(found);
+            if (self != x) {
+                Range cr = new Range(getKey(x), range.max);
+                if (compare(cr.min, cr.max) != 0) {
+                    cr.includeMin = false;
+                }
+                findOverlap(x, cr, range, via, body);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        //System.out.println(((SimTransport)self.trans) + ":2OUT=" + ((SimTransport)self.trans).out);
+    }
+    
+    @Override
     public Node search(Comparable<?> key) {
         // not implemented in this class.
         return null;
@@ -296,7 +351,7 @@ public class RISkipGraph extends RRSkipGraph {
     public List<Node> search(Range range) {
         self.trans.setParameter(SimTransportOracle.Param.NestedWait, Boolean.FALSE); // for better performance
         rangeSearchResult = new SearchResult();
-        onReceiveRangeSearchOp(self, rangeSearchOp(self, range, getMaxLevel(), false));
+        onReceiveRangeSearchOp(self, rangeSearchOp(self, range, getMaxLevel()));
         synchronized(rangeSearchResult) {
             try {
                 rangeSearchResult.wait(50);

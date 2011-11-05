@@ -32,7 +32,11 @@ public class OverlayManager implements ReceiveListener {
         ovClass = name;
     }
 
-    static public String getOverlay(){
+    public Overlay getOverlay(){
+        return o;
+    }
+    
+    static public String getOverlayClassName(){
         return ovClass;
     }
 
@@ -65,6 +69,10 @@ public class OverlayManager implements ReceiveListener {
 
     public void setOverlay(Overlay o) {
         this.o = o;
+    }
+    
+    public Transport getTransport() {
+        return trans;
     }
     
     // this can be used as a sender info.
@@ -118,8 +126,28 @@ public class OverlayManager implements ReceiveListener {
         return o.search(searchKey);
     }
     
+    public void send(Comparable<?> searchKey, Object body) {
+        o.send(searchKey, body);
+    }
+    
     public List<Node> search(Range searchRange) {
         return o.search(searchRange);
+    }
+    
+    public void send(Range range, Object body) {
+        o.send(range, body);
+    }
+    
+    public void overlapSend(Comparable<?> key, Object body) {
+        o.overlapSend(key, body);
+    }
+    
+    public void overlapSend(Range range, Object body) {
+        o.overlapSend(range, body);
+    }
+    
+    public List<Node> search(Range searchRange, int k) {
+        return o.search(searchRange, k);
     }
     
     public void delete() {

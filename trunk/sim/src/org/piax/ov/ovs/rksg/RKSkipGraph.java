@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.grlea.log.SimpleLogger;
 import org.piax.ov.OverlayManager;
 import org.piax.ov.common.Range;
 import org.piax.ov.ovs.rrsg.RRSkipGraph;
@@ -21,6 +22,7 @@ import org.piax.trans.common.Id;
 import org.piax.trans.sim.SimTransportOracle;
 
 public class RKSkipGraph extends RRSkipGraph {
+    SimpleLogger log = new SimpleLogger(RKSkipGraph.class);
     public Comparable<?> rangeEnd;
     public List<Node> containings;
     
@@ -60,8 +62,8 @@ public class RKSkipGraph extends RRSkipGraph {
         return map((Object)SkipGraph.Arg.OP, (Object)Op.GET_CONTAININGS).map(SkipGraph.Arg.NODE, v).map(Arg.RANGE, range);
     }
     
-    private Map<Object,Object> updateContainingsOp(Node startNode, Range range, int level, boolean found, Node containing) {
-        return map((Object)SkipGraph.Arg.OP, (Object)RRSkipGraph.Op.RANGE_SEARCH).map(SkipGraph.Arg.NODE, startNode).map(RRSkipGraph.Arg.RANGE, range).map(SkipGraph.Arg.LEVEL, level).map(RRSkipGraph.Arg.FOUND, found).map(Arg.CONTAINED, containing);
+    private Map<Object,Object> updateContainingsOp(Node startNode, Range range, int level, Node containing) {
+        return map((Object)SkipGraph.Arg.OP, (Object)RRSkipGraph.Op.RANGE_SEARCH).map(SkipGraph.Arg.NODE, startNode).map(RRSkipGraph.Arg.RANGE, range).map(SkipGraph.Arg.LEVEL, level).map(Arg.CONTAINED, containing);
     }
     
     private Map<Object,Object> foundContainingsOp(List<Node> containings) {
@@ -142,6 +144,7 @@ public class RKSkipGraph extends RRSkipGraph {
         List<Id> via = getVia(args);
         Node contained = (Node) args.get(Arg.CONTAINED);
         Range searchRange = (Range) args.get(Arg.RANGE);
+        Object body = args.get(SkipGraph.Arg.BODY);
         try {
             if (contained != null) {
                 //System.out.println("set max of " + key + ":" + getMax() + "->" + max);
@@ -153,7 +156,14 @@ public class RKSkipGraph extends RRSkipGraph {
                         startNode.send(setVia(foundContainingsOp(containings), via));
                     }
                     else {
-                        startNode.send(setVia(foundInRangeOp(self), via));
+                        if (body != null) {
+                            inspectObject(body, self, args);
+                            // log.info("send hops =" + (via == null ? 0 : via.size()));
+                            // System.out.println("key=" + key + " received -> " + body);
+                        }
+                        else {
+                            startNode.send(setVia(foundInRangeOp(self), via));
+                        }
                     }
                 }
                 else {
@@ -161,12 +171,22 @@ public class RKSkipGraph extends RRSkipGraph {
                         startNode.send(setVia(notFoundContainingsOp(), via));
                     }
                     else {
-                        startNode.send(setVia(notFoundInRangeOp(self), via));
+                        if (body == null) {
+                            startNode.send(setVia(notFoundInRangeOp(self), via));
+                        }
                     }
                 }
                 return;
             }
-            startNode.send(setVia(foundInRangeOp(self), via));
+            
+            if (body != null) {
+                inspectObject(body, self, args);
+                //log.info("send hops =" + (via == null ? 0 : via.size()));
+                //System.out.println("key=" + key + " received -> " + body);
+            }
+            else {
+                startNode.send(setVia(foundInRangeOp(self), via));
+            }
         }
         catch (IOException e) {
             e.printStackTrace();
@@ -224,7 +244,7 @@ public class RKSkipGraph extends RRSkipGraph {
     public List<Node> overlapSearch(Range range) {
         self.trans.setParameter(SimTransportOracle.Param.NestedWait, Boolean.FALSE); // for better performance
         rangeSearchResult = new RKSearchResult();
-        onReceiveRangeSearchOp(self, rangeSearchOp(self, range, getMaxLevel(), false));
+        onReceiveRangeSearchOp(self, rangeSearchOp(self, range, getMaxLevel()));
         synchronized(rangeSearchResult) {
             try {
                 rangeSearchResult.wait(100);
@@ -245,7 +265,7 @@ public class RKSkipGraph extends RRSkipGraph {
                     for (Node containing : (List<Node>)mes.get(Arg.CONTAININGS)) {
                         if (rangeOverlaps(new Range(getKey(containing), getRangeEnd(containing)), range)) {
                             if (!rangeSearchResult.matches.contains(containing)) {
-                                containing.send(setVia(rangeSearchOp(self, new Range(getKey(containing), getKey(containing)), getMaxLevel(), false), via));
+                                containing.send(setVia(rangeSearchOp(self, new Range(getKey(containing), getKey(containing)), getMaxLevel()), via));
                                 //rangeSearchResult.matches.add(containing);
                                 //rangeSearchResult.mVias.add(getVia(mes));
                                 synchronized(rangeSearchResult) {
@@ -272,6 +292,43 @@ public class RKSkipGraph extends RRSkipGraph {
         }
         Collections.sort(rangeSearchResult.matches, new KeySortComparator());
         return rangeSearchResult.matches;
+    }
+    
+    @Override
+    public void overlapSend(Comparable<?> key, Object body) {
+        overlapSend(new Range(key, key), body);
+    }
+    
+    @Override
+    public void overlapSend(Range range, Object body) {
+        self.trans.setParameter(SimTransportOracle.Param.NestedWait, Boolean.FALSE); // for better performance
+        onReceiveRangeSearchOp(self, rangeSearchOp(self, range, getMaxLevel()));
+        synchronized(rangeSearchResult) {
+            try {
+                rangeSearchResult.wait(100);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        Map<Object,Object> ret = findLeftMax(self, range.min);
+        Node leftMax = (Node) ret.get(SkipGraph.Arg.NODE);
+        List<Id> via = getVia(ret);
+        if (leftMax != null) {
+            Map<Object, Object> mes;
+            try {
+                mes = leftMax.sendAndWait(setVia(getContainingsOp(self, range), via), new CheckOp(Op.FOUND_CONTAININGS));
+                if (mes != null) {
+                    via = getVia(mes);
+                    for (Node containing : (List<Node>)mes.get(Arg.CONTAININGS)) {
+                        if (rangeOverlaps(new Range(getKey(containing), getRangeEnd(containing)), range)) {
+                            containing.send(setVia(rangeSendOp(new Range(getKey(containing), getKey(containing)), getMaxLevel(), body), via));
+                        }
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
     
     private Map<Object,Object> findLeftMax(Node introducer, Comparable<?> key) {
@@ -305,7 +362,7 @@ public class RKSkipGraph extends RRSkipGraph {
     public List<Node> search(Range range) {
         self.trans.setParameter(SimTransportOracle.Param.NestedWait, Boolean.FALSE); // for better performance
         rangeSearchResult = new RKSearchResult();
-        onReceiveRangeSearchOp(self, rangeSearchOp(self, range, getMaxLevel(), false));
+        onReceiveRangeSearchOp(self, rangeSearchOp(self, range, getMaxLevel()));
         synchronized(rangeSearchResult) {
             try {
                 rangeSearchResult.wait(50);
@@ -337,7 +394,7 @@ public class RKSkipGraph extends RRSkipGraph {
             }
             super.insert(introducer);
             if (!introducer.equals(self)) {
-                self.send(updateContainingsOp(self, range, getMaxLevel(), false, self));
+                self.send(updateContainingsOp(self, range, getMaxLevel(), self));
                 synchronized(rangeSearchResult) {
                     try {
                         rangeSearchResult.wait(50);
