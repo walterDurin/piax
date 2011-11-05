@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.grlea.log.SimpleLogger;
 import org.piax.ov.common.KeyComparator;
 import org.piax.ov.common.Range;
 import org.piax.ov.ovs.skipgraph.SkipGraph;
@@ -18,6 +19,7 @@ import org.piax.trans.sim.SimTransportOracle;
 
 // serial range retrieval extension of skipgraph
 public class SRRSkipGraph extends SkipGraph {
+    SimpleLogger log = new SimpleLogger(SRRSkipGraph.class);
 	static public enum Arg {
 	    RANGE, MATCHES
 	}
@@ -54,13 +56,17 @@ public class SRRSkipGraph extends SkipGraph {
 	}
 	SearchResult searchResult;
 	
-    protected Map<Object,Object> seekOp(Node startNode, Range searchRange, int level) {
+	protected Map<Object,Object> seekOp(Node startNode, Range searchRange, int level) {
         return map((Object)SkipGraph.Arg.OP, (Object)Op.SEEK).map(SkipGraph.Arg.NODE, startNode).map(Arg.RANGE, searchRange).map(SkipGraph.Arg.LEVEL, level);
     }
-    
-    protected Map<Object,Object> scanOp(Node startNode, Range searchRange) {
-        return map((Object)SkipGraph.Arg.OP, (Object)Op.SCAN).map(SkipGraph.Arg.NODE, startNode).map(Arg.RANGE, searchRange);
+	
+	protected Map<Object,Object> seekWithBodyOp(Range searchRange, int level, Object body) {
+        return map((Object)SkipGraph.Arg.OP, (Object)Op.SEEK).map(Arg.RANGE, searchRange).map(SkipGraph.Arg.LEVEL, level).map(SkipGraph.Arg.BODY, body);
     }
+    
+//    protected Map<Object,Object> scanOp(Node startNode, Range searchRange) {
+//        return map((Object)SkipGraph.Arg.OP, (Object)Op.SCAN).map(SkipGraph.Arg.NODE, startNode).map(Arg.RANGE, searchRange);
+//    }
     
     protected Map<Object,Object> seekOp(Map<Object,Object> mes, Range searchRange, int level) {
         Map<Object,Object> newMes = new HashMap<Object,Object>();
@@ -70,10 +76,11 @@ public class SRRSkipGraph extends SkipGraph {
         return newMes;
     }
     
-    protected Map<Object,Object> scanOp(Map<Object,Object> mes, Range searchRange) {
+    protected Map<Object,Object> scanOp(Map<Object,Object> mes) {
         Map<Object,Object> newMes = new HashMap<Object,Object>();
         newMes.putAll(mes);
-        newMes.put(Arg.RANGE, searchRange);
+        newMes.put((Object)SkipGraph.Arg.OP, (Object)Op.SCAN);
+//        newMes.put(Arg.RANGE, searchRange);
         return newMes;
     }
     
@@ -84,12 +91,12 @@ public class SRRSkipGraph extends SkipGraph {
         return newMes;
     }    
 
-    protected Map<Object,Object> endOp(ArrayList<Node> matches) {
-        return map((Object)SkipGraph.Arg.OP, (Object)Op.END).map(Arg.MATCHES, matches);
-    }
+//    protected Map<Object,Object> endOp(ArrayList<Node> matches) {
+//        return map((Object)SkipGraph.Arg.OP, (Object)Op.END).map(Arg.MATCHES, matches);
+//    }
     
 	public List<Node> search(Range range) {
-		self.trans.setParameter(SimTransportOracle.Param.NestedWait, Boolean.FALSE); // for better performance
+        self.trans.setParameter(SimTransportOracle.Param.NestedWait, Boolean.FALSE); // for better performance
         Map<Object, Object> ret = null;
         try {
             ret = self.sendAndWait(seekOp(self, range, getMaxLevel()), new CheckOp(Op.END));
@@ -100,6 +107,16 @@ public class SRRSkipGraph extends SkipGraph {
         }
         return ret == null ? null : (List<Node>)ret.get(Arg.MATCHES);
 	}
+	
+	@Override
+    public void send(Range range, Object body) {
+        self.trans.setParameter(SimTransportOracle.Param.NestedWait, Boolean.FALSE); // for better performance
+        try {
+            self.send(seekWithBodyOp(range, getMaxLevel(), body));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 	
 	protected int compare(Comparable<?> a, Comparable<?>b) {
         return KeyComparator.getInstance().compare(a, b);
@@ -119,16 +136,26 @@ public class SRRSkipGraph extends SkipGraph {
 	}
 	protected void onRangeMatch(Node sender, Map<Object,Object> args) {
         ArrayList<Node> matches = (ArrayList<Node>)args.get(Arg.MATCHES);
-        if (matches == null) {
-            matches = new ArrayList<Node>();
+        Object body = args.get(SkipGraph.Arg.BODY);
+        List<Id> via = getVia(args);
+        if (body != null) {
+            inspectObject(body, self, args);
+            // log.info("send hops =" + (via == null ? 0 : via.size()));
+            //System.out.println("key=" + key + " received -> " + body);
         }
-        matches.add(self);
-        args.put(Arg.MATCHES, matches);
+        else {
+            if (matches == null) {
+                matches = new ArrayList<Node>();
+            }
+            matches.add(self);
+            args.put(Arg.MATCHES, matches);
+        }
     }
 	
 	protected void onReceiveScanOp(Node sender, Map<Object,Object> args) {
 	    Node startNode = (Node) args.get(SkipGraph.Arg.NODE);
         Range searchRange = (Range) args.get(Arg.RANGE);
+        Object body = args.get(SkipGraph.Arg.BODY);
         //ArrayList<Node> matches = (ArrayList<Node>)args.get(Arg.MATCHES);
         //List<Id> via = getVia(args);
         if (searchRange.includes(key)) {
@@ -136,28 +163,32 @@ public class SRRSkipGraph extends SkipGraph {
         }
         if (neighbors.get(R, 0) != null && searchRange.includes(neighbors.getKey(R, 0))) {
             try {
-                neighbors.get(R, 0).send(scanOp(args, searchRange));
+                neighbors.get(R, 0).send(scanOp(args));
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
         else {
-            try {
-                startNode.send(endOp(args));
-            } catch (IOException e) {
-                e.printStackTrace();
+            if (body == null) {
+                try {
+//                System.out.println("END:" + getKey() + "->" + neighbors.getKey(R, 0)  + ",searchRange=" + searchRange);
+                    if (startNode != null) {
+                        startNode.send(endOp(args));
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         }
 	}
 	
 	protected void onReceiveSeekOp(Node sender, Map<Object,Object> args) {
-	    Node startNode = (Node) args.get(SkipGraph.Arg.NODE);
         Range searchRange = (Range) args.get(Arg.RANGE);
         int level = (int)((Integer)args.get(SkipGraph.Arg.LEVEL));
         List<Id> via = getVia(args);
         try {
             if (compare(key, searchRange.min) == 0) {
-                self.send(setVia(scanOp(startNode, searchRange), via));
+                self.send(setVia(scanOp(args), via));
             }
             else if (compare(key, searchRange.min) < 0) {
                 while (level >= 0) {
@@ -186,7 +217,7 @@ public class SRRSkipGraph extends SkipGraph {
                 }
             }
             if (level < 0) {
-                self.send(setVia(scanOp(startNode, searchRange), via));
+                self.send(setVia(scanOp(args), via));
             }
         }
         catch (IOException e) {

@@ -18,6 +18,8 @@ import org.piax.ov.OverlayManager;
 
 import org.piax.ov.common.KeyComparator;
 import org.piax.ov.common.Range;
+import org.piax.ov.ovs.risg.RISkipGraph.Arg;
+import org.piax.ov.ovs.rrsg.RRSkipGraph;
 import org.piax.ov.ovs.skipgraph.SkipGraph;
 import org.piax.ov.ovs.srrsg.SRRSkipGraph;
 import org.piax.trans.Node;
@@ -104,6 +106,10 @@ public class ISkipGraph extends SRRSkipGraph {
     
     private Map<Object,Object> findOverlapOp(Node startNode, Range range, int level, Range searchRange) {
         return map((Object)SkipGraph.Arg.OP, (Object)SRRSkipGraph.Op.SCAN).map(SkipGraph.Arg.NODE, startNode).map(SRRSkipGraph.Arg.RANGE, range).map(SkipGraph.Arg.LEVEL, level).map(Arg.RANGE, searchRange);
+    }
+    
+    private Map<Object,Object> findOverlapOp(Node startNode, Range range, int level, Range searchRange, Object body) {
+        return map((Object)SkipGraph.Arg.OP, (Object)SRRSkipGraph.Op.SCAN).map(SkipGraph.Arg.NODE, startNode).map(SRRSkipGraph.Arg.RANGE, range).map(SkipGraph.Arg.LEVEL, level).map(Arg.RANGE, searchRange).map(SkipGraph.Arg.BODY, body);
     }
     
     private Map<Object,Object> foundMaxOp(Node v) {
@@ -215,9 +221,24 @@ public class ISkipGraph extends SRRSkipGraph {
         if (ret != null) {
             List<Id> retVia = getVia(ret);
             List<Node> matches = (List<Node>)ret.get(SRRSkipGraph.Arg.MATCHES);
+//            if (matches == null) {
+//                System.out.println("Matches= " + 0 + ", hops=" + retVia.size());
+//            }
+//            else {
             System.out.println("Matches= " + matches.size() + ", hops=" + retVia.size());
+//            }
         }
         return ret == null ? null : (List<Node>)ret.get(SRRSkipGraph.Arg.MATCHES);
+    }
+    
+    public void findOverlap(Node start, Range range, Range searchRange, List<Id> via, Object body) {
+        self.trans.setParameter(SimTransportOracle.Param.NestedWait, Boolean.FALSE); // for better performance
+        try {
+            start.send(setVia(findOverlapOp(self, range, getMaxLevel(), searchRange, body), via));
+        } catch (IOException e1) {
+            // TODO Auto-generated catch block
+            e1.printStackTrace();
+        }
     }
     
     @Override
@@ -244,6 +265,31 @@ public class ISkipGraph extends SRRSkipGraph {
             e.printStackTrace();
         }
         return null;
+    }
+    
+    @Override
+    public void overlapSend(Comparable<?> key, Object body) {
+        overlapSend(new Range(key, key), body);
+    }
+    
+    @Override
+    public void overlapSend(Range range, Object body) {
+        self.trans.setParameter(SimTransportOracle.Param.NestedWait, Boolean.FALSE); // for better performance
+        try {
+            Map<Object, Object> found = self.sendAndWait(findMaxOp(self, range.min, getMaxLevel()), new CheckOp(Op.FOUND_MAX));
+            Node x = (Node) found.get(SkipGraph.Arg.NODE);
+            List<Id> via = getVia(found);
+            if (self != x) {
+                //System.out.println("***" + getKey(x) + "-" + range.max);
+                Range cr = new Range(getKey(x), range.max);
+                if (compare(cr.min, cr.max) != 0) {
+                    cr.includeMin = false;
+                }
+                findOverlap(x, cr, range, via, body);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
     
     @Override

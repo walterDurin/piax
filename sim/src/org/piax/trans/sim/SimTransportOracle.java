@@ -184,7 +184,8 @@ public class SimTransportOracle implements Runnable {
     }
     
     public Node getRemoteNode(Node self, Node targetNode) {
-    	Node ret = new Node(targetNode.trans, targetNode.getId(), null, targetNode.trans.getAttrs());
+    	//Node ret = new Node(targetNode.trans, targetNode.getId(), null, targetNode.trans.getAttrs());
+        Node ret = new Node(self.trans, targetNode.getId(), null, targetNode.trans.getAttrs());
     	ret.self = self;
     	return ret;
     }
@@ -233,6 +234,15 @@ public class SimTransportOracle implements Runnable {
         public int compare(Object arg0, Object arg1) {  
             return KeyComparator.getInstance().compare((Comparable<?>)((SimTransport)(nodeMap.get((Id)arg0))).getAttr(OverlayManager.KEY), (Comparable<?>)((SimTransport)(nodeMap.get((Id)arg1))).getAttr(OverlayManager.KEY));
         }  
+    }
+    
+    public ArrayList<ReceiveListener> getAllReceivers() {
+        Object[] objs = nodeMap.keySet().toArray();
+        ArrayList<ReceiveListener> o = new ArrayList<ReceiveListener>();
+        for (Object obj : objs) {
+            o.add(((SimTransport)nodeMap.get((Id)obj)).listener);
+        }
+        return o;
     }
     
     public void dump() {

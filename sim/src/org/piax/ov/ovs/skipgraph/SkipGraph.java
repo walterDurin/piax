@@ -3,14 +3,17 @@ package org.piax.ov.ovs.skipgraph;
 
 import java.io.IOException;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.grlea.log.SimpleLogger;
+import org.piax.ov.Executable;
 import org.piax.ov.Overlay;
 import org.piax.ov.OverlayManager;
 import org.piax.ov.common.KeyComparator;
 import org.piax.ov.common.Range;
+import org.piax.ov.ovs.rrsg.RRSkipGraph.Arg;
 import org.piax.trans.Node;
 import org.piax.trans.ResponseChecker;
 import org.piax.trans.common.Id;
@@ -45,11 +48,18 @@ public class SkipGraph implements Overlay {
     }
     
     static public enum Arg {
-        OP, SIDE, LEVEL, NODE, VAL
+        OP, SIDE, LEVEL, NODE, VAL, BODY
     }
     
     static final public int R = 0;
     static final public int L = 1;
+    
+    // XXX 
+    protected void inspectObject(Object o, Node node, Map<Object,Object> args) {
+        if (o instanceof Executable) {
+            ((Executable)o).onArrival(node, args);
+        }
+    }
     
     public class SearchResult {
         public Op result;
@@ -187,6 +197,10 @@ public class SkipGraph implements Overlay {
         return map((Object)Arg.OP, (Object)Op.SEARCH).map(Arg.NODE, startNode).map(OverlayManager.KEY, searchKey).map(Arg.LEVEL, level);
     }
     
+    protected Map<Object,Object> sendOp(Comparable<?> searchKey, int level, Object body) {
+        return map((Object)Arg.OP, (Object)Op.SEARCH).map(OverlayManager.KEY, searchKey).map(Arg.LEVEL, level).map(Arg.BODY, body);
+    }
+    
     protected Map<Object,Object> foundOp(Node v) {
         return map((Object)Arg.OP, (Object)Op.FOUND).map(Arg.NODE, v);
     }
@@ -245,6 +259,13 @@ public class SkipGraph implements Overlay {
     
     protected Map<Object,Object> foundNeighborOp(Node node, int level) {
         return map((Object)Arg.OP, (Object)Op.FOUND_NEIGHBOR).map(Arg.LEVEL, level).map(Arg.NODE, node);
+    }
+    
+    protected Map<Object,Object> opUpdate(Map<Object,Object> arg, int level) {
+        Map<Object,Object> newMes = new HashMap<Object,Object>();
+        newMes.putAll(arg);
+        newMes.put(SkipGraph.Arg.LEVEL, level);
+        return newMes;
     }
     
     public int getMaxLevel() {
@@ -346,6 +367,33 @@ public class SkipGraph implements Overlay {
             e.printStackTrace();
         }
     }
+    
+    protected void onMatch(Node sender, Map<Object,Object> args) {
+        List<Id> via = getVia(args);
+        Object body = args.get(Arg.BODY);
+        try {
+            if (body != null) {
+                inspectObject(body, self, args);
+                // Received body
+                log.info("send hops =" + (via == null ? 0 : via.size()));
+                //System.out.println("key=" + key + " received -> " + body);
+            }
+            else {
+                sender.send(setVia(foundOp(self), via));
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    
+    protected void onNoMatch(Node sender, Map<Object,Object> args) {
+        List<Id> via = getVia(args);
+        try {
+            sender.send(setVia(notFoundOp(self), via));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
     protected void onReceiveSearchOp(Node sender, Map<Object,Object> args) {
         Node startNode = (Node) args.get(Arg.NODE);
@@ -354,14 +402,15 @@ public class SkipGraph implements Overlay {
         List<Id> via = getVia(args);
         try {
             if (compare(key,searchKey) == 0) {
-                startNode.send(setVia(foundOp(self), via));
+                onMatch(startNode, args);
             }
             else if (compare(key, searchKey) < 0) {
                 while (level >= 0) {
                     Comparable<?> rightKey = neighbors.getKey(R, level);
                     if (rightKey != null && compare(rightKey, searchKey) <= 0) {
                         //System.out.println(String.format("R: KEY:%4s, LEVEL:%2d, MV:%s", key, level, m.toString()));
-                        neighbors.get(R, level).send(setVia(searchOp(startNode, searchKey, level), via));
+                        neighbors.get(R, level).send(opUpdate(args, level));
+                        //
                         break;
                     }
                     else {
@@ -374,7 +423,8 @@ public class SkipGraph implements Overlay {
                     Comparable<?> leftKey = neighbors.getKey(L, level);
                     if (leftKey != null && compare(searchKey, leftKey) <= 0) {
                         //System.out.println(String.format("L: KEY:%4s, LEVEL:%2d, MV:%s", key, level, m.toString()));
-                        neighbors.get(L, level).send(setVia(searchOp(startNode, searchKey, level), via));
+                        neighbors.get(L, level).send(opUpdate(args, level));
+                        //neighbors.get(L, level).send(setVia(searchOp(startNode, searchKey, level), via));
                         break;
                     }
                     else {
@@ -383,7 +433,7 @@ public class SkipGraph implements Overlay {
                 }
             }
             if (level < 0) {
-                startNode.send(setVia(notFoundOp(self), via));
+                onNoMatch(startNode, args);
             }
         }
         catch (IOException e) {
@@ -623,4 +673,42 @@ public class SkipGraph implements Overlay {
         // TODO Auto-generated method stub
         return null;
     }
+
+    @Override
+    public List<Node> search(Range key, int k) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public void overlapSend(Comparable<?> key, Object body) {
+        overlapSend(new Range(key, key), body);
+    }
+
+    @Override
+    public void overlapSend(Range key, Object body) {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    public void send(Comparable<?> key, Object body) {
+        self.trans.setParameter(SimTransportOracle.Param.NestedWait, Boolean.FALSE); // for better performance
+        searchResult = new SearchResult();
+        onReceiveSearchOp(self, sendOp(key, getMaxLevel(), body));
+    }
+
+    @Override
+    public void send(Range key, Object body) {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    public void send(Range key, int k, Object body) {
+        // TODO Auto-generated method stub
+        
+    }
+
+    
 }

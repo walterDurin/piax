@@ -8,6 +8,7 @@ import org.piax.trans.sim.SimTransport;
 
 public class RrSgSim {
     static public void main(String args[]) {
+        //    OverlayManager.setOverlay("org.piax.ov.ovs.rrsg.RRSkipGraph");
         OverlayManager.setOverlay("org.piax.ov.ovs.srrsg.SRRSkipGraph");
 
         SimTransport seedTrans = new SimTransport();
@@ -32,12 +33,21 @@ public class RrSgSim {
         //System.out.println("--- dump ---");
         //trans.dump();
         System.out.println("--- search " + searchKey + " from " + startKey + "---");
-        System.out.println("search result=" + start.search(new Range((double)searchKey, (double)searchKey + 100)));
-        System.out.println("search result=" + start.search(new Range((double)10, (double)11.6)));
-        System.out.println("--- delete " + startKey + "---");
-        start.delete();
-        //System.out.println("--- dump ---");
+        Range r = new Range((double)searchKey, (double)searchKey + 100);
+        System.out.println("search result=" + start.search(r));
+        System.out.println("--- send " + searchKey + " from " + startKey + "---");
+        start.send(r, "Hello, " + r);
+        //System.out.println("search result=" + start.search(new Range((double)10, (double)11.6)));
+        //System.out.println("--- delete " + startKey + "---");
+        //start.delete();
+
         //trans.dump();
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
         seedTrans.fin();
         System.out.println("Erapsed: " + ((SimTransport)seedTrans).getElapsedTime() + "ms");
     }

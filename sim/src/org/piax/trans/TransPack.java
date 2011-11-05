@@ -13,6 +13,7 @@ public class TransPack {
     public TransPack(Node receiver, Node sender, Map<Object,Object> body) {
         this.sender = sender;
         this.receiver = receiver;
+        // Node element of body must be transformed upon receiving
         this.body = body;
     }
     
