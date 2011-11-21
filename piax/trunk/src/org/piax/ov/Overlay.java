@@ -4,24 +4,23 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.piax.ov.cond.Condition;
 import org.piax.trans.Peer;
 import org.piax.trans.common.ReturnSet;
 
 public abstract class Overlay {
-    private String overlayId;
+    private String serviceId;
     private SecurityManager smgr;
-    protected List<DeliveryListener> deliveryListeners;
-    protected List<DiscoveryListener> discoveryListeners;
+    protected List<ReceiveListener> receiveListeners;
+    protected List<MatchListener> matchListeners;
     
-    public Overlay(String overlayId) {
-        this(overlayId, null);
+    public Overlay(String serviceId) {
+        this(serviceId, null);
     }
-    public Overlay(String overlayId, SecurityManager smgr) {
-        this.overlayId = overlayId;
+    public Overlay(String serviceId, SecurityManager smgr) {
+        this.serviceId = serviceId;
         this.smgr = smgr;
-        this.deliveryListeners = new ArrayList<DeliveryListener>();
-        this.discoveryListeners = new ArrayList<DiscoveryListener>();
+        this.receiveListeners = new ArrayList<ReceiveListener>();
+        this.matchListeners = new ArrayList<MatchListener>();
     }
     
     // Overlay の動作を開始する。join。
@@ -35,30 +34,36 @@ public abstract class Overlay {
         // Do nothing.
     }
     
-    public String getOverlayId() {
-        return overlayId;
+    public String getServiceId() {
+        return serviceId;
+    }
+    
+    public SecurityManager getSecurityManager() {
+        return smgr;
     }
     
     // データ配信のエントリポイント。
-    public abstract void deliver(Condition condition, Object payload);
+    public abstract void send(Target target, Object payload);
 
-    public void addDeliveryListener(DeliveryListener listener) {
-        deliveryListeners.add(listener);
+    public void addReceiveListener(ReceiveListener listener) {
+        receiveListeners.add(listener);
     }
     
-    public void removeDeliveryListener(DeliveryListener listener) {
-        deliveryListeners.remove(listener);
+    public void removeReceiveListener(ReceiveListener listener) {
+        receiveListeners.remove(listener);
     }
 
     // クエリ実行のエントリポイント。
-    public abstract ReturnSet<?> discover(Condition condition, Object payload) throws UnsupportedConditionException;
-    public void addDiscoveryListener(DiscoveryListener listener) {
-        discoveryListeners.add(listener);
+    // payload がそのまま MatchListener に渡される。
+    public abstract ReturnSet<?> query(Target target, Object payload) throws UnsupportedTargetException;
+    
+    public void addMatchListener(MatchListener listener) {
+        matchListeners.add(listener);
     }
-    public void removeDiscoveryListener(DiscoveryListener listener) {
-        discoveryListeners.remove(listener);
-    }
+    public void removeMatchListener(MatchListener listener) {
+        matchListeners.remove(listener);
+    } 
 
-    // そのオーバレイ扱うことができるクエリの型を返却する。
-    public abstract List<Class> getConditionClass();
+    // そのオーバレイが扱うことができるTargetの型を返却する。
+    public abstract List<Class<? extends Target>> getTargetClass();
 }
