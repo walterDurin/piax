@@ -5,13 +5,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.piax.trans.Peer;
+import org.piax.trans.ReceiveListener;
+import org.piax.trans.RequestListener;
+import org.piax.trans.SecurityManager;
+import org.piax.trans.Target;
+import org.piax.trans.Transport;
+import org.piax.trans.UnsupportedTargetException;
 import org.piax.trans.common.ReturnSet;
 
-public abstract class Overlay {
+public abstract class Overlay implements Transport {
     private String serviceId;
     private SecurityManager smgr;
     protected List<ReceiveListener> receiveListeners;
-    protected List<MatchListener> matchListeners;
+    protected List<RequestListener> requestListeners;
     
     public Overlay(String serviceId) {
         this(serviceId, null);
@@ -20,7 +26,7 @@ public abstract class Overlay {
         this.serviceId = serviceId;
         this.smgr = smgr;
         this.receiveListeners = new ArrayList<ReceiveListener>();
-        this.matchListeners = new ArrayList<MatchListener>();
+        this.requestListeners = new ArrayList<RequestListener>();
     }
     
     // Overlay の動作を開始する。join。
@@ -53,15 +59,18 @@ public abstract class Overlay {
         receiveListeners.remove(listener);
     }
 
-    // クエリ実行のエントリポイント。
+    // 遠隔実行のエントリポイント。
     // payload がそのまま MatchListener に渡される。
-    public abstract ReturnSet<?> query(Target target, Object payload) throws UnsupportedTargetException;
+    public abstract ReturnSet<?> request(Target target, Object payload) throws UnsupportedTargetException;
     
-    public void addMatchListener(MatchListener listener) {
-        matchListeners.add(listener);
+    @Override
+    public void addRequestListener(RequestListener listener) {
+        requestListeners.add(listener);
     }
-    public void removeMatchListener(MatchListener listener) {
-        matchListeners.remove(listener);
+    
+    @Override
+    public void removeRequestListener(RequestListener listener) {
+        requestListeners.remove(listener);
     } 
 
     // そのオーバレイが扱うことができるTargetの型を返却する。
