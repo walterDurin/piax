@@ -1,6 +1,6 @@
 package org.piax.ov;
 
-import org.piax.ov.cond.Range;
+import org.piax.ov.target.Range;
 
 public abstract class RangeBaseOverlay extends Overlay {
     public RangeBaseOverlay(String overlayId, SecurityManager smgr) {
