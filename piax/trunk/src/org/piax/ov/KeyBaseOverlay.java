@@ -1,5 +1,7 @@
 package org.piax.ov;
 
+import org.piax.trans.SecurityManager;
+
 public abstract class KeyBaseOverlay extends Overlay {
     public KeyBaseOverlay(String overlayId, SecurityManager smgr) {
         super(overlayId, smgr);
