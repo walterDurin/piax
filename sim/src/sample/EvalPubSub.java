@@ -29,10 +29,10 @@ public class EvalPubSub {
         rand = new MersenneTwister(seed);
     } 
     static public void prepareRandomDataSet() {
-        int numberOfNodes = 100;
-        int numberOfEvents = 10;
+        int numberOfNodes = 5;
+        int numberOfEvents = 1;
         int maxValue = 100;
-        int maxRangeWidth = 5;
+        int maxRangeWidth = 10;
         // subscribers;
         subscribers = new ArrayList<Range>(numberOfNodes);
         ArrayList<Double> widths = new ArrayList<Double>(numberOfNodes);
@@ -116,8 +116,8 @@ public class EvalPubSub {
             
             for (OverlayManager ov : ovs) {
                 SimTransport st = (SimTransport)ov.getTransport();
-                //int load = st.in + st.out; // XXX Is this OK?
-                int load = st.out; // XXX Is this OK?
+                int load = st.in + st.out; // XXX Is this OK?
+                //int load = st.out; // XXX Is this OK?
                 if (load > 0) {
                     fsum += load;
                     fssum += (load * load);
@@ -145,15 +145,18 @@ public class EvalPubSub {
     static public void main(String[] args) {
 //        for (int i = 0; i < 10; i++) {
         prepareRandomDataSet();
-        OverlayManager.setOverlay("org.piax.ov.ovs.isg.ISkipGraph");
-        System.out.println("-- ISG");
+        OverlayManager.setOverlay("org.piax.ov.ovs.itsg.ITSkipGraph");
+        System.out.println("-- ITSG");
         eval();
-        OverlayManager.setOverlay("org.piax.ov.ovs.rksg.RKSkipGraph");
-        System.out.println("-- RKSG");
-        eval();
-        OverlayManager.setOverlay("org.piax.ov.ovs.risg.RISkipGraph");
-        System.out.println("-- RISG");
-        eval();
+//        OverlayManager.setOverlay("org.piax.ov.ovs.isg.ISkipGraph");
+//        System.out.println("-- ISG");
+//        eval();
+//        OverlayManager.setOverlay("org.piax.ov.ovs.rksg.RKSkipGraph");
+//        System.out.println("-- RKSG");
+//        eval();
+//        OverlayManager.setOverlay("org.piax.ov.ovs.risg.RISkipGraph");
+//        System.out.println("-- RISG");
+//        eval();
 //        }
     }
 }

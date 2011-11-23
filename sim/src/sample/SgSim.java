@@ -1,5 +1,7 @@
 package sample;
 
+import java.util.Date;
+
 import org.grlea.log.SimpleLogger;
 import org.piax.ov.OverlayManager;
 import org.piax.ov.ovs.skipgraph.MembershipVector;
@@ -9,18 +11,18 @@ import org.piax.trans.sim.SimTransport;
 public class SgSim {
     static public void main(String args[]) {
         OverlayManager.setOverlay("org.piax.ov.ovs.skipgraph.SkipGraph");
-        MembershipVector.ALPHABET = 3;
+        MembershipVector.ALPHABET = 2;
         SimpleLogger log = new SimpleLogger(SgSim.class);
-
-        for (int j = 0; j < 10; j++) {
+        
+        for (int j = 0; j < 1; j++) {
         SimTransport seedTrans = new SimTransport();
         OverlayManager seedOv = new OverlayManager(seedTrans);
         seedOv.putKey(0);
 
         OverlayManager start = null;
-        int searchKey = 10;
-        int startKey = 990;
-        int numberOfNodes = 1000;
+        int searchKey      = 1000000;
+        int startKey       = 9900000;
+        int numberOfNodes = 10000000;
         log.info("start");
         for (int i = numberOfNodes; i > 0; i--) {
             SimTransport trans = new SimTransport();
@@ -33,7 +35,7 @@ public class SgSim {
                 start = ov;
             }
             if (i % 100000 == 0) {
-            System.out.println(i);
+            System.out.println((numberOfNodes - i) / 100000 + " " + ((SimTransport)seedTrans).getElapsedTime() / 1000);
             System.gc();
             }
         }
