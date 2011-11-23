@@ -58,9 +58,9 @@ public class Node {
         trans.send(new TransPack(this, self, mes));
     }
     
-    void send(TransPack mes) throws IOException {
-        trans.send(mes);
-    }
+//    void send(TransPack mes) throws IOException {
+//        trans.send(mes);
+//    }
     
     public Object getAttr(Object attrKey) {
         return attrs.get(attrKey);

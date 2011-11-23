@@ -338,7 +338,7 @@ public class SkipGraph implements Overlay {
         }
     }
     
-    private void change_neighbor(Node u, int side, int l) {
+    protected void change_neighbor(Node u, int side, int l) {       
         Comparable<?> sideKey = neighbors.getKey(side, l);
         Comparable<?> uKey = getKey(u);
         int cmp = 0;
