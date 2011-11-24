@@ -153,4 +153,8 @@ public class OverlayManager implements ReceiveListener {
     public void delete() {
         o.delete();
     }
+    
+    public String toString() {
+        return o.toString();
+    }
 }
