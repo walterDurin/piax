@@ -64,7 +64,7 @@ public class MaxTable {
         for (int i = maxTable.size() - 1; i >= 0; i--) {
             LevelEntry kc = maxTable.get(i);
             //ret += kc.left + "<-" + i + "->" + kc.right + "\n";
-            ret += "(" + i + "):lmax=" + kc.leftMax + ",lnmax=" + kc.leftNeighborMax + "lmnode=" + kc.leftMaxNode + "\n";
+            ret += "(" + i + "):lmax=" + kc.leftMax + ",lnmax=" + kc.leftNeighborMax + ",lmnode=" + kc.leftMaxNode + "\n";
         }
         return ret;
     }

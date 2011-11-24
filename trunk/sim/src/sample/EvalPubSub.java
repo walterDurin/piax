@@ -2,10 +2,12 @@ package sample;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
 import org.piax.ov.OverlayManager;
+import org.piax.ov.common.KeyComparator;
 import org.piax.ov.common.Range;
 import org.piax.ov.ovs.skipgraph.SkipGraph;
 import org.piax.ov.Executable;
@@ -15,6 +17,7 @@ import org.piax.trans.ReceiveListener;
 import org.piax.trans.common.Id;
 import org.piax.trans.sim.SimTransport;
 import org.piax.trans.sim.SimTransportOracle;
+import org.piax.trans.sim.SimTransportOracle.NodeComparator;
 import org.piax.trans.util.MersenneTwister;
 
 public class EvalPubSub {
@@ -28,11 +31,20 @@ public class EvalPubSub {
         seed += new Object().hashCode();
         rand = new MersenneTwister(seed);
     } 
+    
+    static public class OvComparator implements Comparator {  
+        public int compare(Object arg0, Object arg1) {  
+            return KeyComparator.getInstance().compare((Comparable<?>)((OverlayManager)arg0).getKey(), (Comparable<?>)((OverlayManager)arg1).getKey());
+        }  
+    }
+    
+    
+    
     static public void prepareRandomDataSet() {
-        int numberOfNodes = 5;
+        int numberOfNodes = 100;
         int numberOfEvents = 1;
         int maxValue = 100;
-        int maxRangeWidth = 10;
+        int maxRangeWidth = 100;
         // subscribers;
         subscribers = new ArrayList<Range>(numberOfNodes);
         ArrayList<Double> widths = new ArrayList<Double>(numberOfNodes);
@@ -81,9 +93,24 @@ public class EvalPubSub {
             ov.putRange(range);
             ovs.add(ov);
         }
+        
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        
         System.out.println("insert message count=" + SimTransportOracle.messageCount());
         SimTransportOracle.clearMessageCount();
-//        SimTransport.getOracle().dump();
+        
+        // XXX dump all nodes
+        List<ReceiveListener> rls = SimTransport.getOracle().getAllReceivers();
+        Collections.sort(rls, new OvComparator());
+        for (ReceiveListener rl : rls) {
+            System.out.println(((OverlayManager)rl).toString());
+        }
+        
         
         count = 0;
         sumHops = 0;
@@ -148,6 +175,7 @@ public class EvalPubSub {
         OverlayManager.setOverlay("org.piax.ov.ovs.itsg.ITSkipGraph");
         System.out.println("-- ITSG");
         eval();
+        
 //        OverlayManager.setOverlay("org.piax.ov.ovs.isg.ISkipGraph");
 //        System.out.println("-- ISG");
 //        eval();

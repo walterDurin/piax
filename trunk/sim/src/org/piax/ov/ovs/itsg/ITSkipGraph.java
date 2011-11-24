@@ -400,4 +400,8 @@ public class ITSkipGraph extends SkipGraph {
             super.onReceive(sender, mes);
         }
     }
+    
+    public String toString() {
+        return "[" + getKey() + "," + getRangeEnd() + "]\n" + neighbors.toString() + maxes.toString();
+    }
 }
