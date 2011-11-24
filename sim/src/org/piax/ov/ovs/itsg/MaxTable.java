@@ -43,7 +43,7 @@ public class MaxTable {
     }
 
     public Object get(int kind, int level) {
-        if (maxTable.size() < level + 1) {
+        if (maxTable.size() <= level + 1) {
             return null;
         }
         LevelEntry kc = maxTable.get(level);

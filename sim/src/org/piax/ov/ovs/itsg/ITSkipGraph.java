@@ -141,7 +141,7 @@ public class ITSkipGraph extends SkipGraph {
                     else {
                         neighbors.put(L, l, null);
                     }
-                    maxes.put(LEFT_MAX, l, max((Comparable<?>)maxes.get(LEFT_MAX, l),(Comparable<?>)maxes.get(LEFT_NEIGHBOR_MAX, l)));
+                    maxes.put(LEFT_MAX, l, max((Comparable<?>)maxes.get(LEFT_MAX, l - 1),(Comparable<?>)maxes.get(LEFT_NEIGHBOR_MAX, l - 1)));
                     if (neighbors.get(R, l - 1) != null) {
                         Comparable<?> currentMax = null;
                         Map<Object,Object> r = neighbors.get(R, l - 1).sendAndWait(buddyWithMaxOp(self, R, l - 1, m, currentMax), new CheckOp(Op.SET_LINK_WITH_MAX));
@@ -208,7 +208,7 @@ public class ITSkipGraph extends SkipGraph {
     
     protected void onReceiveBuddyWithMaxOp(Node sender, Map<Object,Object> args) {
         Node u = (Node) args.get(SkipGraph.Arg.NODE);
-        int l = (int)((Integer)args.get(SkipGraph.Arg.LEVEL)) + 1; // + 1 needed?
+        int l = (int)((Integer)args.get(SkipGraph.Arg.LEVEL));
         MembershipVector val = (MembershipVector) args.get(SkipGraph.Arg.VAL);
         Comparable<?> max = (Comparable<?>) args.get(Arg.MAX);
         List<Id> via = getVia(args);
@@ -228,7 +228,7 @@ public class ITSkipGraph extends SkipGraph {
                         neighbors.get(R, l).send(setVia(getLinkWithMaxOp(u, R, l, currentMax), via));
                     }
                     else {
-                        u.send(setLinkWithMaxOp(u, l, currentMax, null));
+                        u.send(setLinkWithMaxOp(null, l, currentMax, null));
                     }
                 }
                 catch (IOException e) {
@@ -237,16 +237,16 @@ public class ITSkipGraph extends SkipGraph {
             else {
                 try {
                     currentMax = max((Comparable<?>) maxes.get(LEFT_MAX, l), max);
-                    if (neighbors.get(L, l - 1) != null) {
-                        neighbors.get(L, l - 1).send(setVia(buddyWithMaxOp(u, L, l - 1, val, currentMax), via));
+                    if (neighbors.get(L, l) != null) {
+                        neighbors.get(L, l).send(setVia(buddyWithMaxOp(u, L, l, val, currentMax), via));
                     }
                     else {
-                        if (neighbors.getKey(L, l - 1) != null && compare(neighbors.getKey(L, l - 1), getKey()) < 0) {
-                            neighbors.get(R, l - 1).send(setVia(getLinkWithMaxOp(u, R, l - 1, currentMax), via));
+                        if (neighbors.getKey(L, l) != null && compare(neighbors.getKey(L, l), getKey()) < 0) {
+                            neighbors.get(R, l).send(setVia(getLinkWithMaxOp(u, R, l, currentMax), via));
                         }
                         else {
-                            u.send(setVia(setLinkWithMaxOp(null, l - 1, currentMax, null), via));
-                            maxes.put(LEFT_MAX_NODE, l - 1, u); // ???
+                            u.send(setVia(setLinkWithMaxOp(null, l, currentMax, null), via));
+                            maxes.put(LEFT_MAX_NODE, l, u); // ???
                         }
                     }
                 }
@@ -265,7 +265,7 @@ public class ITSkipGraph extends SkipGraph {
                         neighbors.get(R, l).send(setVia(getLinkWithMaxOp(u, R, l, null), via));
                     }
                     else {
-                        u.send(setLinkWithMaxOp(u, l, null, null));
+                        u.send(setLinkWithMaxOp(null, l, null, null));
                     }
                 }
                 catch (IOException e) {
@@ -275,8 +275,8 @@ public class ITSkipGraph extends SkipGraph {
                 Comparable<?> currentMax = null;
                 currentMax = max((Comparable<?>)maxes.get(LEFT_MAX, l), max);
                 try {
-                    if (neighbors.get(R, l - 1) != null) {
-                        neighbors.get(R, l - 1).send(buddyWithMaxOp(u, R, l - 1, val, currentMax));
+                    if (neighbors.get(R, l) != null) {
+                        neighbors.get(R, l).send(buddyWithMaxOp(u, R, l, val, currentMax));
                     }
                     else {
                         Node optionalNode = null;
@@ -298,12 +298,12 @@ public class ITSkipGraph extends SkipGraph {
         int l = getMaxLevel();
         try {
             if (u.equals(self)) {
-                if (max != null && compare(rangeEnd, max) == 0) {
+                if (neighbors.get(R, 0) != null && max != null && compare(rangeEnd, max) == 0) {
                     neighbors.get(R, 0).send(updateMaxOp(u, max));
                 }
                 while (l > 0) {
                     l--;
-                    if (neighbors.get(R, l+1) != null && neighbors.get(R, l + 1).equals(neighbors.get(R, l))) {
+                    if (neighbors.get(R, l + 1) != null && neighbors.get(R, l + 1).equals(neighbors.get(R, l))) {
                         neighbors.get(R, l).send(updateLeftNeighborMaxOp(l, (Comparable<?>)maxes.get(LEFT_MAX, l), null));
                     }
                 }
@@ -316,7 +316,7 @@ public class ITSkipGraph extends SkipGraph {
                     changeFlag = true;
                     sendingFlag = true;
                 }
-                while (!changeFlag) {
+                while (l > 0 && !changeFlag) {
                     l--;
                     if (compare(neighbors.getKey(L, l), getKey()) > 0) {
                         if (maxes.get(LEFT_NEIGHBOR_MAX, l) != null && compare((Comparable<?>)maxes.get(LEFT_NEIGHBOR_MAX, l), (Comparable<?>)maxes.get(LEFT_MAX, l + 1)) < 0) {
