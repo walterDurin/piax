@@ -1,0 +1,21 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:id="@+id/mes_dialog_root"
+              android:orientation="vertical"
+              android:layout_width="fill_parent"
+              android:layout_height="fill_parent"
+              android:padding="10dp"
+              android:minWidth="300dip" android:background="#ffffff">
+  <TextView android:id="@+id/mes_text" android:layout_width="fill_parent" android:layout_height="wrap_content" android:text="" android:textColor="#000000" android:autoLink="web" android:maxHeight="200dip" android:scrollbars="vertical" android:clickable="true" android:focusable="true" android:focusableInTouchMode="true" android:background="#ffffff" android:textSize="15dip"></TextView>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/message_detail_layout"
+    android:layout_width="fill_parent" android:layout_height="wrap_content"  
+    android:padding="6dip" android:gravity="center_vertical|center_horizontal" android:minWidth="300dip">  
+<TextView android:id="@+id/message_detail" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="" android:textColor="#333333" android:textSize="13dip" android:autoLink="web"></TextView>
+</LinearLayout> 
+<LinearLayout android:id="@+id/LinearLayout01" android:layout_width="fill_parent" android:layout_height="wrap_content"  android:gravity="center_vertical|center_horizontal" android:paddingLeft="2dip" android:paddingRight="2dip">
+<Button android:text="@string/reply" android:id="@+id/mes_reply_button" android:layout_width="wrap_content" android:layout_height="wrap_content" android:minWidth="80dip"></Button>
+<Button android:text="@string/cite_reply" android:id="@+id/mes_citereply_button" android:layout_width="wrap_content" android:layout_height="wrap_content" android:minWidth="80dip"></Button>
+<Button android:text="@string/direct" android:id="@+id/mes_direct_button" android:layout_width="wrap_content" android:layout_height="wrap_content" android:minWidth="80dip"></Button>
+
+</LinearLayout>
+</LinearLayout>

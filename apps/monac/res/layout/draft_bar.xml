@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+  xmlns:android="http://schemas.android.com/apk/res/android"
+  android:layout_width="fill_parent" android:layout_height="wrap_content" android:minHeight="40dip" android:gravity="center_vertical">
+  <TextView
+     android:id="@+id/draft_title"
+     android:layout_width="wrap_content"
+     android:layout_height="wrap_content"
+     android:text="iDovatter" android:layout_marginLeft="10dip" android:gravity="center_vertical"/>
+<LinearLayout android:id="@+id/LinearLayout01" android:layout_width="fill_parent" android:layout_height="wrap_content" android:gravity="right|center_vertical" android:layout_gravity="right|center_vertical">
+<TextView android:id="@+id/draft_count" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/text_limit" android:layout_marginRight="10dip"></TextView>
+</LinearLayout>
+</LinearLayout>

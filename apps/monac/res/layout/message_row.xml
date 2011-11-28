@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>  
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"  
+    android:layout_width="fill_parent" android:layout_height="wrap_content"
+    android:id="@+id/mes_back"
+    android:padding="6dip" android:background="@drawable/back">
+    <LinearLayout android:id="@+id/LinearLayout01" android:layout_width="wrap_content" android:layout_height="fill_parent" android:gravity="center_vertical|center_horizontal">
+    <ImageView android:layout_width="wrap_content"  
+        android:layout_height="wrap_content" android:layout_marginRight="6dip"
+        android:src="@drawable/unseen" android:id="@+id/new_icon" android:maxWidth="12px" android:minHeight="12px" android:minWidth="12px" android:maxHeight="12px"/>
+    </LinearLayout>
+    <LinearLayout android:orientation="vertical"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content">  
+        <TextView android:id="@+id/toptext"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+            android:textStyle="bold" android:textColor="#00007f" android:textSize="15dip" android:height="19dip" android:minHeight="19dip"/>  
+        <TextView android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+            android:id="@+id/bottomtext"  
+            android:textColor="@color/text_color" android:ellipsize="none" android:textSize="15dip" android:minHeight="32dip"/>
+    <LinearLayout android:orientation="horizontal"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content">
+    <ImageView android:layout_width="wrap_content"  
+        android:layout_height="wrap_content" android:layout_marginRight="6dip"
+        android:src="@drawable/twitter_icon" android:id="@+id/twitter_icon" android:maxWidth="12px" android:minHeight="12px" android:minWidth="12px" android:maxHeight="12px"/>
+    
+    <TextView android:id="@+id/footertext" android:textColor="#666666" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="12dip"></TextView>
+    </LinearLayout>
+</LinearLayout>  
+
+</LinearLayout> 

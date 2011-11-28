@@ -1,0 +1,16 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:id="@+id/auth_dialog_root"
+              android:orientation="vertical"
+              android:layout_width="fill_parent"
+              android:layout_height="fill_parent"
+              android:padding="10dp"
+              android:background="#aaaaaa" android:minWidth="320dip">
+  <TextView android:id="@+id/tv_auth_von_name" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="" android:textColor="#000000"></TextView>
+  <TextView android:id="@+id/tv_auth_expires_at" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="" android:textColor="#000000"></TextView>
+<LinearLayout android:id="@+id/LinearLayout01" android:layout_width="fill_parent" android:layout_height="wrap_content"  android:gravity="center_vertical|center_horizontal" android:paddingTop="10dip">
+<Button android:text="@string/auth_request" android:id="@+id/auth_request_button" android:layout_width="wrap_content" android:layout_height="wrap_content" android:minWidth="80dip"></Button>
+<Button android:text="@string/auth_delete" android:id="@+id/auth_delete_button" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginLeft="10dip" android:minWidth="80dip"></Button>
+<Button android:text="@string/cancel" android:id="@+id/auth_cancel_button" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginLeft="10dip" android:minWidth="80dip"></Button>
+
+</LinearLayout>
+</LinearLayout>
