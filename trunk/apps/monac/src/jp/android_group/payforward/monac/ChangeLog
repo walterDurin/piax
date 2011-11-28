@@ -1,0 +1,25 @@
+2011-05-21  Yuuichi Teranishi  <teranisi@gohome.org>
+
+	* bts/BluetoothLocatorChecker.java: Locator checker for Bluetooth.
+
+	* nfs/NfcLocator.java, nfs/NfcTransportService.java, nfs/nfc/Nfc.java,
+	nfs/nfc/NfcReceiver.java, nfs/nfc/android/ANdroidNfc.java:
+	New files for NFC (higher than API Level 10).
+
+	* tsd/BluetoothTSD.java: Treat error while BluetoothAdapter#getScanMode.
+
+	* bts/BluetoothTransportService.java: Close accepting socket for
+	each accept.
+
+	* bts/BluetoothLocator.java: Check whether the obtained address is
+	valid or not.
+
+	* Setting.java: Added Nfc setting.
+
+	* NeighborAdapter.java: Treat Nfc icon.
+
+	* Monac.java: Use Nfc.
+	
+2011-05-08  Yuuichi Teranishi  <teranisi@gohome.org>
+
+	* Android Market release (version 1.0).

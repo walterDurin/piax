@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen
+   android:title="@string/pref_general"
+   xmlns:android="http://schemas.android.com/apk/res/android">
+
+  <PreferenceScreen android:key="authenticate_key"
+                    android:title="@string/authenticate_title"
+                    android:summary="@string/authenticate_desc">
+  </PreferenceScreen>
+  <CheckBoxPreference
+     android:key="ask_data_ex_key"
+     android:title="@string/ask_data_ex"
+     android:summary="@string/ask_data_ex_desc" android:defaultValue="true"/>
+  <CheckBoxPreference
+     android:key="use_wifi_key"
+     android:title="@string/use_wifi"
+     android:summary="@string/use_wifi_desc" android:defaultValue="true"/>
+  <CheckBoxPreference
+     android:key="use_bluetooth_key"
+     android:title="@string/use_bluetooth"
+     android:summary="@string/use_bluetooth_desc" android:defaultValue="true"/>
+  <CheckBoxPreference
+     android:key="periodic_bluetooth_key"
+     android:title="@string/periodic_bluetooth"
+     android:summary="@string/periodic_bluetooth_desc" android:defaultValue="true"/>
+  <CheckBoxPreference
+     android:key="use_nfc_key"
+     android:title="@string/use_nfc"
+     android:summary="@string/use_nfc_desc" android:defaultValue="true"/>          
+  <CheckBoxPreference
+     android:key="synchronizer_enable_key"
+     android:title="@string/enable_synchronizer"
+     android:summary="@string/enable_synchronizer_desc" android:defaultValue="false"/>
+  <PreferenceScreen android:key="about_key"
+                    android:title="@string/license_title_txt">
+  </PreferenceScreen>
+
+</PreferenceScreen>

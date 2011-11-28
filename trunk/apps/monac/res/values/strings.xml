@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="hello">Hello World, Monac!</string>
+    <string name="app_name">Monac</string>
+<color name="text_color">#202020</color>
+<color name="screenname_color">#000000</color>
+<string name="send">Send</string>
+<string name="draft_title">New Message</string>
+<string name="cancel">Cancel</string>
+<string name="text_limit">140</string>
+<string name="menu_setting">Setting</string>
+<string name="menu_finish">Exit</string>
+<string name="menu_draft">New Message</string>
+<string name="pref_general">General Settings</string>
+<string name="user_name">User name</string>
+<string name="user_name_desc">User name is displayed as the sender of your message and device name. You can change your user name anytime.</string>
+<string name="reissue_peerid">Reissue Peer-Id</string>
+<string name="reissue_peerid_desc">\'Peer-Id\' is used to identify this device. Peer-Id is read by other remote devices. You can renew Peer-Id by \'Reissue\' button.</string>
+<string name="reissue">Reissue</string>
+<string name="ask_data_ex">Ask data exchanges</string>
+<string name="ask_data_ex_desc">If OFF, the device starts exchanging data with neighbor devices without confirmation.</string>
+<string name="menu_mark_read">Mark as Read</string>
+<string name="prompt_user_name">Need to authenticate.</string>
+<string name="pub">Public</string>
+<string name="inbox">Inbox</string>
+<string name="neighbors">Neighbors</string>
+<string name="ask">Monac would like to exchange data with neighbor devices</string>
+<string name="allow">Allow</string>
+<string name="dont_allow">Don\'t Allow</string>
+<string name="reply">Reply</string>
+<string name="cite_reply">Cite Reply</string>
+<string name="direct">Direct</string>
+<string name="new_from">New Message</string>
+<string name="replyto">Reply</string>
+<string name="directto">Direct</string>
+<string name="repliedto">replied to</string>
+<string name="repliedto_tail"></string>
+<string name="to">to</string>
+<string name="to_tail"></string>
+<string name="no_name">No Name</string>
+<string name="pref_adv">Advanced Settings</string>
+
+<string name="tsd_connect_to_seed_setting">Client Setting</string>
+<string name="tsd_connect_to_seed">Run TSD Client</string>
+<string name="tsd_connect_to_seed_desc">If ON, the device runs TSD client that connects to the TSD seed.</string>
+<string name="tsd_connect_locator">Locator to connect</string>
+<string name="tsd_connect_locator_desc">Specify locator to connect to. Format is \'type:hostname:port\'.</string>
+
+<string name="tv_von_name">Name</string>
+<string name="tv_von_key">VON Key</string>
+
+<string name="tsd_run_as_seed_setting">Server Setting</string>
+<string name="tsd_run_as_seed">Run TSD Server</string>
+<string name="tsd_run_as_seed_desc">If ON, the device runs TSD server and becomes a TSD seed.</string>
+<string name="tsd_accept_locator">Locator to accept</string>
+<string name="tsd_accept_locator_desc">Specify locator to accept request. Format is \'type:hostname:port\'</string>
+<string name="tsd_run_local_setting">Multicast Setting</string>
+<string name="tsd_run_local">Enable Multicast TSD</string>
+<string name="tsd_run_local_desc">If ON, the device multicasts TSD messages for devices in the same LAN.</string>
+<string name="tsd_use_broadcast">Use broadcast</string>
+<string name="tsd_use_broadcast_desc">Use broadcast instead of multicast (not recommended).</string>
+
+<string name="need_restart">Need restart to take effect for setting changes</string>
+<string name="error_on_tsd">TSD Server is not used due to an error in setting</string>
+<string name="run_as_seed">Run as TSD Seed</string>
+<string name="run_as_seed_desc">Run as TSD Seed using TSD Seed Locator</string>
+<string name="pref_tsd">TSD Setting</string>
+<string name="pref_tsd_desc">Setting for TSD(Transport Service Discovery)</string>
+<string name="pref_twitter">Twitter Setting</string>
+<string name="pref_twitter_desc">Setting to run as a Twitter Gateway</string>
+<string name="twitter_account">Twitter Account</string>
+<string name="twitter_account_desc">Set up the Twitter account to use</string>
+<string name="twitter_get_url">Twitter Source URL</string>
+<string name="twitter_get_url_desc">Set up the Twitter Source URL</string>
+<string name="twitter_enable">Run Twitter Gateway</string>
+<string name="twitter_enable_desc">Set ON to run as Twitter Gateway</string>
+<string name="pref_von">VON Setting</string>
+
+<string name="pref_von_desc">Manage subscribed VON(Virtual Overlay Network)</string>
+<string name="von_add">Save</string>
+<string name="von_title">Subscribed VONs</string>
+<string name="von_delete">Delete</string>
+<string name="edit_von_entry">Edit VON entry</string>
+<string name="new_von_entry">New VON entry</string>
+<string name="menu_add_adhoc_von">New VON</string>
+<string name="menu_add_closed_von">New PLAIN</string>
+<string name="menu_add_managed_von">Official VON</string>
+<string name="von">VON: </string>
+<string name="restart">Restart</string>
+<string name="error_on_twitter">Twitter error occured.</string>
+<string name="pref_adv_desc">Advanced settings for advanced use.</string>
+
+<string name="auth_request">Authorize</string>
+<string name="auth_delete">Delete</string>
+<string name="auth_setup">Managed VON Setup</string>
+
+<string name="auth_von_name">Name</string>
+<string name="auth_expires_at">Expires at</string>
+<string name="auth_notyet">Not authorized yet</string>
+
+<string name="error_no_pubkey">Invalid message for direct.</string>
+
+<string name="encrypted_text">(cannot decrpyt text)</string>
+
+<string name="use_bluetooth">Use Bluetooth</string>
+<string name="use_bluetooth_desc">Use Bluetooth for data exchange</string>
+
+<string name="periodic_bluetooth">Auto Bluetooth Discovery</string>
+<string name="periodic_bluetooth_desc">Enable automatic Bluetooth discovery</string>
+
+<string name="use_wifi">Use Wifi</string>
+<string name="use_wifi_desc">Use Wifi for data exchange</string>
+
+<string name="use_nfc">Use NFC</string>
+<string name="use_nfc_desc">Use NFC for data exchange</string>
+
+<string name="authenticate_title">Authenticate</string>
+<string name="authenticate_desc">Tap to authenticate</string>
+<string name="authentication_error">Authentication Error</string>
+<string name="authentication_success">is authenticated.</string>
+
+<string name="internal_error">Internal error</string>
+
+
+<string name="authenticated_as">Currently authenticated as(Tap to re-authenticate):</string>
+
+<string name="enable_synchronizer">Synchronizer</string>
+<string name="enable_synchronizer_desc">Run message synchronizer in background</string>
+<string name="draft_tweet_cb">Fwd To Twitter</string>
+
+<string name="license_title_txt">About Monac</string>
+<string name="view_more">View More</string>
+<string name="license_msg_txt">Monac is a part of Payforwarding project.\nIt posts messages to Twitter via P2P network (DTN) using Wireless LAN and Bluetooth</string>
+
+</resources>

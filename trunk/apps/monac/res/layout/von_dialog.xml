@@ -1,0 +1,23 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:id="@+id/von_dialog_root"
+              android:orientation="vertical"
+              android:layout_width="fill_parent"
+              android:layout_height="fill_parent"
+              android:padding="10dp"
+              android:background="#aaaaaa" android:minWidth="320dip">
+  <TextView android:id="@+id/tv_von_name" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/tv_von_name" android:textColor="#000000"></TextView><EditText android:id="@+id/et_von_name"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            />
+  <TextView android:id="@+id/tv_von_key" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/tv_von_key" android:textColor="#000000"></TextView><EditText android:id="@+id/et_von_key"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:password="false"/>
+
+
+<LinearLayout android:id="@+id/LinearLayout01" android:layout_width="fill_parent" android:layout_height="wrap_content"  android:gravity="center_vertical|center_horizontal">
+<Button android:text="@string/von_add" android:id="@+id/von_add_button" android:layout_width="wrap_content" android:layout_height="wrap_content" android:minWidth="80dip"></Button>
+<Button android:text="@string/von_delete" android:id="@+id/von_delete_button" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginLeft="10dip" android:minWidth="80dip"></Button><Button android:text="@string/cancel" android:id="@+id/von_cancel_button" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginLeft="10dip" android:minWidth="80dip"></Button>
+
+</LinearLayout>
+</LinearLayout>

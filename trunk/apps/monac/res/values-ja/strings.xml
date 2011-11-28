@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="hello">Hello World!</string>
+    <string name="app_name">Monac</string>
+<color name="text_color">#202020</color>
+<color name="screenname_color">#000000</color>
+<string name="send">送信</string>
+<string name="draft_title">新規メッセージ</string>
+<string name="cancel">キャンセル</string>
+<string name="text_limit">140</string>
+<string name="menu_setting">設定</string>
+<string name="menu_draft">新規メッセージ</string>
+<string name="menu_finish">終了</string>
+<string name="pref_general">一般的な設定</string>
+<string name="user_name">ユーザ名</string>
+<string name="user_name_desc">ユーザ名はメッセージの差出人，近隣デバイスの名前として表示されます．いつでも変更可能です．</string>
+<string name="reissue_peerid">ピアIDの再生成</string>
+<string name="reissue_peerid_desc">ピアIDはデバイス固有の識別子です．ピアIDは遠隔から読み出すことができます．ピアIDを変更するには「再生成」ボタンを押してください．</string>
+<string name="reissue">再生成</string>
+<string name="ask_data_ex">通信開始を確認</string>
+<string name="ask_data_ex_desc">オフにすると，確認なしに近隣デバイスとデータ通信を開始します．</string>
+<string name="menu_mark_read">全て既読に</string>
+<string name="prompt_user_name">Twitterで認証してください</string>
+<string name="pub">すべて</string>
+<string name="inbox">受信箱</string>
+<string name="neighbors">隣接リスト</string>
+<string name="ask">Monac は近隣のデバイスと自動的にデータ通信を開始します．よろしいですか？</string>
+<string name="allow">許可する</string>
+<string name="dont_allow">許可しない</string>
+<string name="reply">返信</string>
+<string name="cite_reply">引用+返信</string>
+<string name="direct">ダイレクト</string>
+<string name="new_from">新規メッセージ</string>
+<string name="replyto">返信メッセージ</string>
+<string name="directto">個別メッセージ</string>
+<string name="repliedto">から</string>
+<string name="repliedto_tail">への返信</string>
+<string name="to">から</string>
+<string name="to_tail">へダイレクト</string>
+<string name="no_name">名前不明</string>
+<string name="pref_adv">高度な設定</string>
+<string name="tsd_host">TSD シードロケータ</string>
+<string name="tsd_host_desc">TSD シードのロケータを設定できます．フォーマットは \'type:hostname:port\'.</string>
+
+<string name="tsd_connect_to_seed_setting">クライアント設定</string>
+<string name="tsd_connect_to_seed">クライアントとして動作</string>
+<string name="tsd_connect_to_seed_desc">オンにすると，TSD クライアントとして動作し，TSD シードに接続します．</string>
+<string name="tsd_connect_locator">接続先ロケータ</string>
+<string name="tsd_connect_locator_desc">接続先のロケータを指定します．フォーマットは \'type:hostname:port\' です．</string>
+
+<string name="tv_von_name">名前</string>
+<string name="tv_von_key">VON キー</string>
+
+<string name="tsd_run_as_seed_setting">サーバ設定</string>
+<string name="tsd_run_as_seed">サーバとして動作</string>
+<string name="tsd_run_as_seed_desc">オンにすると，TSD サーバとして動作し，TSD シードになります．</string>
+<string name="tsd_accept_locator">受付ロケータ</string>
+<string name="tsd_accept_locator_desc">接続を受け付けるロケータを指定します．フォーマットは \'type:hostname:port\' です．</string>
+<string name="tsd_run_local_setting">同報通知設定</string>
+<string name="tsd_run_local">同報通知オン</string>
+<string name="tsd_run_local_desc">オンにするとマルチキャストで TSD メッセージを通知します．</string>
+<string name="tsd_use_broadcast">ブロードキャスト使用</string>
+<string name="tsd_use_broadcast_desc">オンにするとマルチキャストのかわりにブロードキャストを使います(非推奨)．</string>
+
+<string name="need_restart">設定変更を反映させるには再起動が必要です．</string>
+<string name="error_on_tsd">TSD サーバは設定エラーのため利用されません</string>
+<string name="pref_tsd">TSD 設定</string>
+<string name="pref_tsd_desc">TSD(Transport Service Discovery)の設定です．</string>
+<string name="pref_twitter">Twitter 設定</string>
+<string name="pref_twitter_desc">Twitter のメッセージを取り込む設定です．</string>
+<string name="twitter_account">Twitter ユーザ設定</string>
+<string name="twitter_account_desc">利用する Twitter ユーザを設定します．</string>
+<string name="twitter_get_url">Twitter URL</string>
+<string name="twitter_get_url_desc">Twitter メッセージのソースとして用いる URL です．</string>
+<string name="twitter_enable">Twitter 接続</string>
+<string name="twitter_enable_desc">オンにすると Twitter のメッセージを取り込みます．</string>
+
+<string name="pref_von">VON 設定</string>
+<string name="pref_von_desc">仮想化オーバレイ(VON: Virtual Overlay Network)の設定です．</string>
+<string name="von_add">保存</string>
+<string name="von_title">参加 VON リスト</string>
+<string name="von_delete">削除</string>
+<string name="edit_von_entry">VON 編集</string>
+<string name="new_von_entry">新規 VON</string>
+<string name="menu_add_adhoc_von">新規 VON</string>
+<string name="menu_add_managed_von">公式 VON</string>
+<string name="von">VON: </string>
+<string name="restart">再起動</string>
+<string name="error_on_twitter">Twitter の処理に失敗しました</string>
+<string name="pref_adv_desc">上級者向けの高度な設定です．</string>
+<string name="error_no_pubkey">直接送信できない不正なメッセージです．</string>
+<string name="encrypted_text">(復号できない暗号文です)</string>
+
+
+<string name="authenticate_title">Twitterで認証</string>
+<string name="authenticate_desc">タップするとTwitterに接続して認証します．</string>
+<string name="authentication_error">認証エラーです．</string>
+<string name="authentication_success">が認証されました．</string>
+
+<string name="internal_error">内部エラーです．</string>
+
+<string name="authenticated_as">現在のユーザ(タップすると再認証します):</string>
+
+<string name="enable_synchronizer">メッセージ同期</string>
+<string name="enable_synchronizer_desc">インターネット接続時にメッセージをTwitterへ転送します</string>
+
+<string name="draft_tweet_cb">Twitterへ転送</string>
+
+<string name="use_bluetooth">Bluetooth通信</string>
+<string name="use_bluetooth_desc">Bluetoothを用います．</string>
+
+<string name="periodic_bluetooth">Bluetooth常時検出</string>
+<string name="periodic_bluetooth_desc">常時Bluetoothを検出可能にします</string>
+
+<string name="use_wifi">無線LAN通信</string>
+<string name="use_wifi_desc">無線LANを用います．</string>
+
+<string name="use_nfc">NFC通信</string>
+<string name="use_nfc_desc">NFCを用います．</string>
+
+<string name="license_title_txt">Monac について</string>
+<string name="view_more">もっと知る</string>
+<string name="license_msg_txt">
+Monac は Payforwarding プロジェクトの一環として開発されました．\n無線LANとBluetoothを用いたP2P型のすれちがい通信(DTN)を経由して，Twitterへメッセージを投稿します．</string>
+</resources>
