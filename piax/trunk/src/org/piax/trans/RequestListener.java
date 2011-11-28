@@ -1,5 +1,7 @@
 package org.piax.trans;
 
+import java.io.Serializable;
+
 import org.piax.ov.Overlay;
 
 
@@ -18,5 +20,5 @@ public interface RequestListener {
      * @param payload {@.ja 受信したオブジェクト.}{@.en The message payload that has been arrived.}
      * @return {@.ja discovery に対する返信オブジェクト．}{@.en The reply object for the discovery.}
      */
-    public Object onRequest(Target target, Object payload);
+    public Object onRequest(Target target, Serializable payload);
 }

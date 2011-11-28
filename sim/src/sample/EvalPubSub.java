@@ -38,13 +38,27 @@ public class EvalPubSub {
         }  
     }
     
-    
+    static public void prepareSampleDataSet() {
+        subscribers = new ArrayList<Range>(8);
+        subscribers.add(new Range(2, 7));
+        subscribers.add(new Range(5, 15));
+        subscribers.add(new Range(8, 10));
+        subscribers.add(new Range(9, 14));
+        subscribers.add(new Range(13, 16));
+        subscribers.add(new Range(17, 22));
+        subscribers.add(new Range(18, 20));
+        subscribers.add(new Range(20, 25));
+        publishers = new ArrayList<Integer>();
+        publishers.add(0);
+        events = new ArrayList<Double>();
+        events.add(10.0);
+    }
     
     static public void prepareRandomDataSet() {
-        int numberOfNodes = 100;
+        int numberOfNodes = 8;
         int numberOfEvents = 1;
-        int maxValue = 100;
-        int maxRangeWidth = 100;
+        int maxValue = 30;
+        int maxRangeWidth = 15;
         // subscribers;
         subscribers = new ArrayList<Range>(numberOfNodes);
         ArrayList<Double> widths = new ArrayList<Double>(numberOfNodes);
@@ -171,14 +185,15 @@ public class EvalPubSub {
     
     static public void main(String[] args) {
 //        for (int i = 0; i < 10; i++) {
-        prepareRandomDataSet();
+        // prepareRandomDataSet();
+        prepareSampleDataSet();
         OverlayManager.setOverlay("org.piax.ov.ovs.itsg.ITSkipGraph");
         System.out.println("-- ITSG");
         eval();
         
-//        OverlayManager.setOverlay("org.piax.ov.ovs.isg.ISkipGraph");
-//        System.out.println("-- ISG");
-//        eval();
+        OverlayManager.setOverlay("org.piax.ov.ovs.isg.ISkipGraph");
+        System.out.println("-- ISG");
+        eval();
 //        OverlayManager.setOverlay("org.piax.ov.ovs.rksg.RKSkipGraph");
 //        System.out.println("-- RKSG");
 //        eval();
