@@ -8,8 +8,6 @@ import java.util.Map;
 
 import org.grlea.log.SimpleLogger;
 import org.piax.ov.OverlayManager;
-import org.piax.ov.ovs.risg.RISkipGraph.Op;
-import org.piax.ov.ovs.rrsg.RRSkipGraph;
 import org.piax.ov.ovs.skipgraph.MembershipVector;
 import org.piax.ov.ovs.skipgraph.SkipGraph;
 
@@ -213,22 +211,23 @@ public class ITSkipGraph extends SkipGraph {
         Comparable<?> max = (Comparable<?>) args.get(Arg.MAX);
         List<Id> via = getVia(args);
         int side = (int)((Integer)args.get(SkipGraph.Arg.SIDE));
-        if (!m.existsElementAt(l)) {
-            m.randomElement(l);
-            neighbors.put(L, l, null);
-            neighbors.put(R, l, null);
+        if (!m.existsElementAt(l + 1)) {
+            m.randomElement(l + 1);
+            neighbors.put(L, l + 1, null);
+            neighbors.put(R, l + 1, null);
         }
         if (side == L) {
             Comparable<?> currentMax = null;
-            if (m.equals(l, val)) {
-                //change_neighbor(u, side, l);
+            if (m.equals(l + 1, val)) {
+                // change_neighbor(u, L, l + 1);
                 currentMax = max;
                 try {
-                    if (neighbors.getKey(R, l) != null && compare(neighbors.getKey(R, l), getKey()) < 0) {
-                        neighbors.get(R, l).send(setVia(getLinkWithMaxOp(u, R, l, currentMax), via));
+                    if (neighbors.getKey(R, l + 1) != null && compare(neighbors.getKey(R, l + 1), getKey(u)) < 0) {
+                        neighbors.get(R, l + 1).send(setVia(getLinkWithMaxOp(u, R, l + 1, currentMax), via));
                     }
                     else {
-                        u.send(setLinkWithMaxOp(null, l, currentMax, null));
+                        u.send(setLinkWithMaxOp(null, l + 1, currentMax, null));
+                        neighbors.put(R, l + 1, u);
                     }
                 }
                 catch (IOException e) {
@@ -241,13 +240,13 @@ public class ITSkipGraph extends SkipGraph {
                         neighbors.get(L, l).send(setVia(buddyWithMaxOp(u, L, l, val, currentMax), via));
                     }
                     else {
-                        if (neighbors.getKey(L, l) != null && compare(neighbors.getKey(L, l), getKey()) < 0) {
-                            neighbors.get(R, l).send(setVia(getLinkWithMaxOp(u, R, l, currentMax), via));
-                        }
-                        else {
-                            u.send(setVia(setLinkWithMaxOp(null, l, currentMax, null), via));
-                            maxes.put(LEFT_MAX_NODE, l, u); // ???
-                        }
+                        //if (neighbors.getKey(L, l) != null && compare(neighbors.getKey(L, l), getKey()) < 0) {
+                        //    neighbors.get(R, l).send(setVia(getLinkWithMaxOp(u, R, l, currentMax), via));
+                        //}
+                        //else {
+                        u.send(setVia(setLinkWithMaxOp(null, l + 1, currentMax, null), via));
+                        maxes.put(LEFT_MAX_NODE, l, u); // ???
+                        //}
                     }
                 }
                 catch (IOException e) {
@@ -257,15 +256,16 @@ public class ITSkipGraph extends SkipGraph {
         }
         // side == R (buddyRight)
         else {
-            if (m.equals(l, val)) {
-                maxes.put(LEFT_NEIGHBOR_MAX, l, max);
+            if (m.equals(l + 1, val)) {
+                maxes.put(LEFT_NEIGHBOR_MAX, l + 1, max);
                 maxes.put(LEFT_MAX, l + 1, max((Comparable<?>)maxes.get(LEFT_MAX, l), (Comparable<?>)maxes.get(LEFT_NEIGHBOR_MAX, l)));
                 try {
-                    if (neighbors.getKey(L, l) != null && compare(neighbors.getKey(L, l), getKey()) > 0) {
-                        neighbors.get(R, l).send(setVia(getLinkWithMaxOp(u, R, l, null), via));
+                    if (neighbors.getKey(L, l + 1) != null && compare(neighbors.getKey(L, l + 1), getKey(u)) > 0) {
+                        neighbors.get(L, l + 1).send(setVia(getLinkWithMaxOp(u, L, l + 1, null), via));
                     }
                     else {
-                        u.send(setLinkWithMaxOp(null, l, null, null));
+                        u.send(setLinkWithMaxOp(null, l + 1, null, null));
+                        neighbors.put(L, l + 1, u);
                     }
                 }
                 catch (IOException e) {
@@ -283,7 +283,7 @@ public class ITSkipGraph extends SkipGraph {
                         if (l == getMaxLevel() - 1) {
                             optionalNode = self;
                         }
-                        u.send(setLinkWithMaxOp(null, l, null, optionalNode));
+                        u.send(setLinkWithMaxOp(null, l + 1, null, optionalNode));
                     }
                 }
                 catch (IOException e) {
@@ -402,6 +402,6 @@ public class ITSkipGraph extends SkipGraph {
     }
     
     public String toString() {
-        return "[" + getKey() + "," + getRangeEnd() + "]\n" + neighbors.toString() + maxes.toString();
+        return "[" + getKey() + "," + getRangeEnd() + "]\n" + super.toString() + maxes.toString();
     }
 }

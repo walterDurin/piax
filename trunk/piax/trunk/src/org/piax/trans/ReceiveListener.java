@@ -1,5 +1,7 @@
 package org.piax.trans;
 
+import java.io.Serializable;
+
 import org.piax.ov.Overlay;
 
 
@@ -16,5 +18,5 @@ public interface ReceiveListener {
      * {@.en called when a message is received.}
      * @param payload {@.ja 受信したオブジェクト.}{@.en The message payload that has been arrived.}
      */
-    public void onReceive(Target target, Object payload);
+    public void onReceive(Target target, Serializable payload);
 }
