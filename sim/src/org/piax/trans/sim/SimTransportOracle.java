@@ -18,8 +18,7 @@ import org.piax.trans.ResponseChecker;
 import org.piax.trans.TransPack;
 import org.piax.trans.Transport;
 import org.piax.trans.common.Id;
-
-import sample.AreaSim;
+//import sample.AreaSim;
 
 public class SimTransportOracle implements Runnable {
     HashMap<Id, ReceiveListener> nodeMap;
