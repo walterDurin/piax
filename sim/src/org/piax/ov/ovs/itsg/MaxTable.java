@@ -23,7 +23,8 @@ public class MaxTable {
     }
     
     public void put(int kind, int level, Object value) {
-        for (int i = level + 1; i > maxTable.size(); i--) {
+        int maxTableSize = maxTable.size();
+        for (int i = level + 1; i > maxTableSize; i--) {
             LevelEntry kc = new LevelEntry();
             kc.leftMax = kc.leftNeighborMax = null;
             kc.leftMaxNode = null;

@@ -107,15 +107,19 @@ public class OverlayManager implements ReceiveListener {
         return new Range((Comparable<?>)trans.getAttr(KEY), (Comparable<?>)trans.getAttr(RANGE_END));
     }
 
-    public void putRange(Range range) {
+    public boolean putRange(Range range) {
         trans.putAttr(KEY, range.min);
         trans.putAttr(RANGE_END, range.max);
         setupOverlay();
-        o.insert(seed);
+        return o.insert(seed);
     }
     
     public List<Node> overlapSearch(Range searchRange) {
         return o.overlapSearch(searchRange);
+    }
+    
+    public List<SearchResult> overlapSearchWithRoute(Range searchRange) {
+        return o.overlapSearchWithRoute(searchRange);
     }
     
     public List<Node> overlapSearch(Comparable<?> searchKey) {

@@ -24,7 +24,7 @@ public class SgSim {
         int startKey       = 9900000;
         int numberOfNodes = 10000000;
         log.info("start");
-        for (int i = numberOfNodes; i > 0; i--) {
+        for (int i = 1; i <= numberOfNodes; i++) {
             SimTransport trans = new SimTransport();
             OverlayManager ov = new OverlayManager(trans);
             // Following is the way to get a Node instance on SimTransport.

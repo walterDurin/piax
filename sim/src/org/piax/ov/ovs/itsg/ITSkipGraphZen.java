@@ -90,7 +90,7 @@ public class ITSkipGraphZen extends SkipGraph {
     }
     
     @Override
-    public void insert(Node introducer) {
+    public boolean insert(Node introducer) {
         int side, otherSide;
         self.trans.setParameter(SimTransportOracle.Param.NestedWait, Boolean.FALSE);
         if (introducer.equals(self)) {
@@ -115,8 +115,7 @@ public class ITSkipGraphZen extends SkipGraph {
               //  Map<Object, Object> sr = introducer.sendAndWait(searchOp(self, key, maxLevel - 1), new CheckOp(SkipGraph.Op.NOT_FOUND, SkipGraph.Op.FOUND));
                 Map<Object, Object> sr = introducer.sendAndWait(searchOp(self, key, maxLevel), new CheckOp(SkipGraph.Op.NOT_FOUND, SkipGraph.Op.FOUND));
                 if (sr.get(SkipGraph.Arg.OP) == SkipGraph.Op.FOUND) {
-                    System.out.println("FOUND.");
-                    return;
+                    return false;
                 }
                 Node otherSideNeighbor = (Node)sr.get(SkipGraph.Arg.NODE);
                 Map<Object, Object> nr = otherSideNeighbor.sendAndWait(getNeighborOp(side, 0), new CheckOp(SkipGraph.Op.RET_NEIGHBOR));
@@ -180,8 +179,10 @@ public class ITSkipGraphZen extends SkipGraph {
                
             } catch (IOException e) {
                 e.printStackTrace();
+                return false;
             }
         }
+        return true;
     }
     
     private void change_neighbor_with_max(Node u, int side, int l, Comparable<?> max, Node optionalNode) {
@@ -356,7 +357,7 @@ public class ITSkipGraphZen extends SkipGraph {
                     sendingFlag = true;
                     for (int i=0;i<getMaxLevel();i++) {                          // send updateLNM to all nodes in LevelMax List
                     	if(maxes.get(LEFT_MAX_NODE, i)!= null) {
-                    		System.out.println("44444444444"+maxes.get(LEFT_MAX_NODE, i));
+                    		//System.out.println("44444444444"+maxes.get(LEFT_MAX_NODE, i));
                     		Node to = (Node)maxes.get(LEFT_MAX_NODE, i);
                     		to.send(updateLeftNeighborMaxOp(l,(Comparable<?>)maxes.get(LEFT_MAX, l), (Comparable<?>)maxes.get(LEFT_MAX, getMaxLevel()),DOWN));
                     	}
@@ -364,7 +365,7 @@ public class ITSkipGraphZen extends SkipGraph {
                 }
                 while (l > 0 && changeFlag) {
                     l--;
-                    if (compare(neighbors.getKey(L, l), uKey) >= 0) {
+                    if (neighbors.getKey(L, l) != null && compare(neighbors.getKey(L, l), uKey) >= 0) {
                         if (maxes.get(LEFT_NEIGHBOR_MAX, l) != null && compare((Comparable<?>)maxes.get(LEFT_NEIGHBOR_MAX, l), (Comparable<?>)maxes.get(LEFT_MAX, l + 1)) < 0) {
                             maxes.put(LEFT_NEIGHBOR_MAX, l, maxes.get(LEFT_MAX, l + 1));
                             changeFlag = true;
@@ -474,7 +475,7 @@ public class ITSkipGraphZen extends SkipGraph {
     
     public String toString() {
     	System.out.println();
-        return "[" + getKey() + "," + getRangeEnd() + "]\n" + neighbors.toString() + maxes.toString() + "max Level= " + getMaxLevel() + " maxTable size= "+ maxes.size() ;
+        return "[" + getKey() + "," + getRangeEnd() + "]\n" + neighbors.toString() + maxes.toString() + "max Level= " + getMaxLevel();//+ " maxTable size= "+ maxes.size() ;
     }
 }
 

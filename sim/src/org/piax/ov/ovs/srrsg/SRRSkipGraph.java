@@ -30,12 +30,12 @@ public class SRRSkipGraph extends SkipGraph {
 		super(self);
 	}
 	
-	protected class SearchResult {
+	protected class ResultPool {
 	    public List<Node> matches;
 	    public List<Node> unmatches;
 	    public List<List<Id>> mVias;
 	    public List<List<Id>> uVias;
-	    public SearchResult() {
+	    public ResultPool() {
 	        matches = new ArrayList<Node>();
 	        unmatches = new ArrayList<Node>();
 	        mVias = new ArrayList<List<Id>>();
@@ -54,7 +54,7 @@ public class SRRSkipGraph extends SkipGraph {
             uVias.add(via);
         }
 	}
-	SearchResult searchResult;
+	ResultPool searchResult;
 	
 	protected Map<Object,Object> seekOp(Node startNode, Range searchRange, int level) {
         return map((Object)SkipGraph.Arg.OP, (Object)Op.SEEK).map(SkipGraph.Arg.NODE, startNode).map(Arg.RANGE, searchRange).map(SkipGraph.Arg.LEVEL, level);
