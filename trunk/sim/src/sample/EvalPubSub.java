@@ -187,9 +187,9 @@ public class EvalPubSub {
 //        for (int i = 0; i < 10; i++) {
         // prepareRandomDataSet();
         prepareSampleDataSet();
-        OverlayManager.setOverlay("org.piax.ov.ovs.itsg.ITSkipGraph");
-        System.out.println("-- ITSG");
-        eval();
+        //OverlayManager.setOverlay("org.piax.ov.ovs.itsg.ITSkipGraphZen");
+        //System.out.println("-- ITSG");
+        //eval();
         
         OverlayManager.setOverlay("org.piax.ov.ovs.isg.ISkipGraph");
         System.out.println("-- ISG");

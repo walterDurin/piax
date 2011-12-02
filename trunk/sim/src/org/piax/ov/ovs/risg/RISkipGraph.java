@@ -232,7 +232,7 @@ public class RISkipGraph extends RRSkipGraph {
         }
     }
     
-    SkipGraph.SearchResult searchResult;
+    SkipGraph.ResultPool searchResult;
     SearchResult rangeSearchResult;
     
     public List<Node> updateMax(Range range, Comparable<?> max, List<Id> via) {
@@ -364,13 +364,15 @@ public class RISkipGraph extends RRSkipGraph {
     }
     
     @Override
-    public void insert(Node introducer) {
+    public boolean insert(Node introducer) {
         self.trans.setParameter(SimTransportOracle.Param.NestedWait, Boolean.FALSE); // for better performance
-        super.insert(introducer);
+        if (!super.insert(introducer)) {
+            return false;
+        }
         // seed.
         if (neighbors.get(L, 0) == null && neighbors.get(R, 0) == null) {
             setMax(rangeEnd);
-            return;
+            return true;
         }
         if (compare(rangeEnd, getMax(neighbors.get(L, 0))) > 0) {
             setMax(rangeEnd);
@@ -384,12 +386,14 @@ public class RISkipGraph extends RRSkipGraph {
                 }
             } catch (IOException e) {
                 e.printStackTrace();
+                return false;
             }
         }
         else {
             // left side is greater than self. Just update self.
             setMax(getMax(neighbors.get(L, 0)));
         }
+        return true;
     }
     
     @Override

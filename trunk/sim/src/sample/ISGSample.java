@@ -4,6 +4,7 @@ import org.piax.ov.OverlayManager;
 import org.piax.ov.common.Range;
 import org.piax.trans.Node;
 import org.piax.trans.sim.SimTransport;
+import org.piax.trans.sim.SimTransportOracle;
 
 public class ISGSample {
     static public void main(String args[]) {
@@ -28,24 +29,31 @@ public class ISGSample {
             ov.setSeed(seed);
             if (i == 1) {
                 ov.putRange(new Range((double) 6, (double) 14));
+                System.out.println("insert message count1=" + SimTransportOracle.messageCount());
             }
             if (i == 2) {
                 ov.putRange(new Range((double) 9, (double) 12));
+                System.out.println("insert message count2=" + SimTransportOracle.messageCount());
             }
             if (i == 3) {
                 ov.putRange(new Range((double) 14, (double) 16));
+                System.out.println("insert message count3=" + SimTransportOracle.messageCount());
             }
             if (i == 4) {
                 ov.putRange(new Range((double) 15, (double) 23));
+                System.out.println("insert message count4=" + SimTransportOracle.messageCount());
             }
             if (i == 5) {
                 ov.putRange(new Range((double) 18, (double) 19));
+                System.out.println("insert message count5=" + SimTransportOracle.messageCount());
             }
             if (i == 6) {
                 ov.putRange(new Range((double) 20, (double) 27));
+                System.out.println("insert message count6=" + SimTransportOracle.messageCount());
             }
             if (i == 7) {
                 ov.putRange(new Range((double) 21, (double) 30));
+                System.out.println("insert message count7=" + SimTransportOracle.messageCount());
             }
             if (i == startKey) {
                 start = ov;
@@ -56,7 +64,9 @@ public class ISGSample {
         System.out.println("--- end dump ---");
         
         System.out.println("--- search " + searchKey + " from " + startKey + "---");
+        SimTransportOracle.clearMessageCount();
         System.out.println("search result=" + start.overlapSearch((double)20));
+        System.out.println("search message count=" + SimTransportOracle.messageCount());
         System.out.println("--- delete " + startKey + "---");
         start.delete();
 

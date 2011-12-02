@@ -19,6 +19,8 @@ import org.piax.trans.TransPack;
 import org.piax.trans.Transport;
 import org.piax.trans.common.Id;
 
+import sample.AreaSim;
+
 public class SimTransportOracle implements Runnable {
     HashMap<Id, ReceiveListener> nodeMap;
     BlockingQueue<TransPack> queue;
@@ -125,16 +127,18 @@ public class SimTransportOracle implements Runnable {
                 if (isEndMessage(tp)) {
                     break;
                 }
+                if (nodeMap.get(tp.receiver.getId()) == null) { Thread.yield();}
+
                 ReceiveListener ov = nodeMap.get(tp.receiver.getId());
-                
                 // replace self of remote node accessor
+                Node selfNode = ((Transport)ov).getSelfNode(); 
                 for (Object key : tp.body.keySet()) {
                     Object value = tp.body.get(key);
                     if (value instanceof Node) {
-                        ((Node)value).self = ((Transport)ov).getSelfNode(); 
+                        ((Node)value).self = selfNode;
                     }
                 }
-                tp.sender.self = ((Transport)ov).getSelfNode();
+                tp.sender.self = selfNode;
                 // tp.receiver.self = node;
                 
                 Monitor monotor = getWait(tp);
@@ -210,7 +214,14 @@ public class SimTransportOracle implements Runnable {
         synchronized(lock) {
             try {
                 queue.add(pack);
-                countMessage();
+                /* String nid1 = (String)pack.receiver.getAttr(AreaSim.NODE_ID_KEY);
+                String nid2 = (String)pack.sender.getAttr(AreaSim.NODE_ID_KEY);
+                if (nid1 != null && nid2 != null && nid1.equals(nid2)) {
+                    // same node!
+                }
+                else {
+                    countMessage();
+                } */
                 lock.wait();
                 Thread.yield();
             } catch (InterruptedException e) {
@@ -234,6 +245,10 @@ public class SimTransportOracle implements Runnable {
         public int compare(Object arg0, Object arg1) {  
             return KeyComparator.getInstance().compare((Comparable<?>)((SimTransport)(nodeMap.get((Id)arg0))).getAttr(OverlayManager.KEY), (Comparable<?>)((SimTransport)(nodeMap.get((Id)arg1))).getAttr(OverlayManager.KEY));
         }  
+    }
+    
+    public ReceiveListener getReceiver(Id id) {
+        return nodeMap.get(id);
     }
     
     public ArrayList<ReceiveListener> getAllReceivers() {

@@ -11,6 +11,7 @@ import org.grlea.log.SimpleLogger;
 import org.piax.ov.Executable;
 import org.piax.ov.Overlay;
 import org.piax.ov.OverlayManager;
+import org.piax.ov.SearchResult;
 import org.piax.ov.common.KeyComparator;
 import org.piax.ov.common.Range;
 import org.piax.ov.ovs.rrsg.RRSkipGraph.Arg;
@@ -61,12 +62,12 @@ public class SkipGraph implements Overlay {
         }
     }
     
-    public class SearchResult {
+    public class ResultPool {
         public Op result;
         public Node node;
     }
 
-    private SearchResult searchResult;
+    private ResultPool searchResult;
     
     public class CheckOp implements ResponseChecker {
         Object op;
@@ -399,7 +400,6 @@ public class SkipGraph implements Overlay {
         Node startNode = (Node) args.get(Arg.NODE);
         Comparable<?> searchKey = (Comparable<?>) args.get(OverlayManager.KEY);
         int level = BOUNCE ? getMaxLevel() : (int)((Integer)args.get(Arg.LEVEL));
-        List<Id> via = getVia(args);
         try {
             if (compare(key,searchKey) == 0) {
                 onMatch(startNode, args);
@@ -544,7 +544,7 @@ public class SkipGraph implements Overlay {
     // skip graph protocol (search/insert/delete)
     public Node search(Comparable<?> key) {
         self.trans.setParameter(SimTransportOracle.Param.NestedWait, Boolean.FALSE); // for better performance
-        searchResult = new SearchResult();
+        searchResult = new ResultPool();
         onReceiveSearchOp(self, searchOp(self, key, getMaxLevel()));
         synchronized(searchResult) {
             try {
@@ -559,7 +559,7 @@ public class SkipGraph implements Overlay {
         return null;
     }
     
-    public void insert(Node introducer) {
+    public boolean insert(Node introducer) {
         int side, otherSide;
         self.trans.setParameter(SimTransportOracle.Param.NestedWait, Boolean.FALSE);
         if (introducer.equals(self)) {
@@ -582,8 +582,8 @@ public class SkipGraph implements Overlay {
                 int maxLevel = (Integer)mr.get(Arg.LEVEL);
                 Map<Object, Object> sr = introducer.sendAndWait(searchOp(self, key, maxLevel - 1), new CheckOp(Op.NOT_FOUND, Op.FOUND));
                 if (sr.get(Arg.OP) == Op.FOUND) {
-                    System.out.println("FOUND.");
-                    return;
+                    //System.out.println("FOUND.");
+                    return false;
                 }
                 Node otherSideNeighbor = (Node)sr.get(Arg.NODE);
                 Map<Object, Object> nr = otherSideNeighbor.sendAndWait(getNeighborOp(side, 0), new CheckOp(Op.RET_NEIGHBOR));
@@ -629,8 +629,10 @@ public class SkipGraph implements Overlay {
                 maxLevel = l;
             } catch (IOException e) {
                 e.printStackTrace();
+                return false;
             }
         }
+        return true;
     }
     
     public void delete() {
@@ -667,6 +669,12 @@ public class SkipGraph implements Overlay {
         // Not implemented in this class.
         return null;
     }
+    
+    @Override
+    public List<SearchResult> overlapSearchWithRoute(Range key) {
+        // Not implemented.
+        return null;
+    }
 
     @Override
     public List<Node> overlapSearch(Comparable<?> key) {
@@ -694,7 +702,7 @@ public class SkipGraph implements Overlay {
     @Override
     public void send(Comparable<?> key, Object body) {
         self.trans.setParameter(SimTransportOracle.Param.NestedWait, Boolean.FALSE); // for better performance
-        searchResult = new SearchResult();
+        searchResult = new ResultPool();
         onReceiveSearchOp(self, sendOp(key, getMaxLevel(), body));
     }
 

@@ -75,7 +75,7 @@ public class ITSkipGraph extends SkipGraph {
     }
     
     @Override
-    public void insert(Node introducer) {
+    public boolean insert(Node introducer) {
         int side, otherSide;
         self.trans.setParameter(SimTransportOracle.Param.NestedWait, Boolean.FALSE);
         if (introducer.equals(self)) {
@@ -99,7 +99,7 @@ public class ITSkipGraph extends SkipGraph {
                 Map<Object, Object> sr = introducer.sendAndWait(searchOp(self, key, maxLevel - 1), new CheckOp(SkipGraph.Op.NOT_FOUND, SkipGraph.Op.FOUND));
                 if (sr.get(SkipGraph.Arg.OP) == SkipGraph.Op.FOUND) {
                     System.out.println("FOUND.");
-                    return;
+                    return false;
                 }
                 Node otherSideNeighbor = (Node)sr.get(SkipGraph.Arg.NODE);
                 Map<Object, Object> nr = otherSideNeighbor.sendAndWait(getNeighborOp(side, 0), new CheckOp(SkipGraph.Op.RET_NEIGHBOR));
@@ -158,8 +158,10 @@ public class ITSkipGraph extends SkipGraph {
                 self.send(updateMaxOp(self,(Comparable<?>)maxes.get(LEFT_MAX,maxLevel)));
             } catch (IOException e) {
                 e.printStackTrace();
-            }
+                return false;
+            }            
         }
+        return true;
     }
     
     private void change_neighbor_with_max(Node u, int side, int l, Comparable<?> max) {

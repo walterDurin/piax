@@ -232,7 +232,7 @@ public class RKSkipGraph extends RRSkipGraph {
         }
     }
     
-    SkipGraph.SearchResult searchResult;
+    SkipGraph.ResultPool searchResult;
     RKSearchResult rangeSearchResult;
     
     @Override
@@ -375,7 +375,7 @@ public class RKSkipGraph extends RRSkipGraph {
     }
     
     @Override
-    public void insert(Node introducer) {
+    public boolean insert(Node introducer) {
         self.trans.setParameter(SimTransportOracle.Param.NestedWait, Boolean.FALSE); // for better performance
         // seed.
         //super.insert(introducer);
@@ -392,7 +392,9 @@ public class RKSkipGraph extends RRSkipGraph {
                     rangeSearchResult.mVias.add(getVia(mes));
                 }
             }
-            super.insert(introducer);
+            if (!super.insert(introducer)) {
+                return false;
+            }
             if (!introducer.equals(self)) {
                 self.send(updateContainingsOp(self, range, getMaxLevel(), self));
                 synchronized(rangeSearchResult) {
@@ -400,15 +402,18 @@ public class RKSkipGraph extends RRSkipGraph {
                         rangeSearchResult.wait(50);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
+                        return false;
                     }
                 }
             }
         }
         catch (IOException e) {
             e.printStackTrace();
+            return false;
         }
         containings = rangeSearchResult.containings;
         //System.out.println(range + ", CONTAININGS=" + containings);
+        return true;
     }
     
     @Override
