@@ -95,6 +95,12 @@ public class EvalPubSubZen {
             Node seed = trans.getRemoteNode(seedTrans);
             ov.setSeed(seed);
             ov.putRange(range);
+            try {
+                Thread.sleep(1);
+            } catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
             ovs.add(ov);
         }
         
