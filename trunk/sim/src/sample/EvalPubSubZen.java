@@ -123,79 +123,79 @@ public class EvalPubSubZen {
 
         count = 0;
         sumHops = 0;
-//        Executable ex = new Executable() {
-//            public void onArrival(Node node, Map<Object, Object> args) {
-//                Object body = args.get(SkipGraph.Arg.BODY);
-//                List<Id> via = (List<Id>)args.get(Node.VIA);
-//                synchronized(this) {
-//                    count++;
-//                    sumHops += (via == null ? 0 : via.size());
-//                }
-//                //System.out.println("send hops =" + (via == null ? 0 : via.size()));
-//                //System.out.println("sub=[" + node.getAttr(OverlayManager.KEY) + "," + node.getAttr(OverlayManager.RANGE_END) + "]");
-//            }
-//        };
-//        double sumFairness = 0;
-//        int countFairness = 0;
-//        for (int i = 0; i < publishers.size(); i++) {
-//
-//            double fsum = 0;
-//            double fssum = 0;
-//            double fcount = 0;
-//            
-//            for (OverlayManager ov : ovs) {
-//                SimTransport st = (SimTransport)ov.getTransport();
-//                st.clearCount();
-//            }
-//            
-//            ovs.get(publishers.get(i)).overlapSend(events.get(i), ex);
-//            
-//            for (OverlayManager ov : ovs) {
-//                SimTransport st = (SimTransport)ov.getTransport();
-//                int load = st.in + st.out; // XXX Is this OK?
-//                //int load = st.out; // XXX Is this OK?
-//                if (load > 0) {
-//                    fsum += load;
-//                    fssum += (load * load);
-//                    fcount += 1;
-//                }
-//            }            
-//            sumFairness += ((fsum * fsum) / (fcount * fssum));
-//            countFairness++;
-//
-//        }
-//        try {
-//            Thread.sleep(2000);
-//        } catch (InterruptedException e) {
-//            // TODO Auto-generated catch block
-//            e.printStackTrace();
-//        }
-//
-//        System.out.println("ave. fairness index=" + (sumFairness / countFairness));
-//        System.out.println("ave. hops=" + (sumHops / count));
-//        System.out.println("publish message count=" + SimTransportOracle.messageCount());
-//        
-//        seedTrans.fin();
+        Executable ex = new Executable() {
+            public void onArrival(Node node, Map<Object, Object> args) {
+                Object body = args.get(SkipGraph.Arg.BODY);
+                List<Id> via = (List<Id>)args.get(Node.VIA);
+                synchronized(this) {
+                    count++;
+                    sumHops += (via == null ? 0 : via.size());
+                }
+                //System.out.println("send hops =" + (via == null ? 0 : via.size()));
+                //System.out.println("sub=[" + node.getAttr(OverlayManager.KEY) + "," + node.getAttr(OverlayManager.RANGE_END) + "]");
+            }
+        };
+        double sumFairness = 0;
+        int countFairness = 0;
+        for (int i = 0; i < publishers.size(); i++) {
+
+            double fsum = 0;
+            double fssum = 0;
+            double fcount = 0;
+            
+            for (OverlayManager ov : ovs) {
+                SimTransport st = (SimTransport)ov.getTransport();
+                st.clearCount();
+            }
+            
+            ovs.get(publishers.get(i)).overlapSend(events.get(i), ex);
+            
+            for (OverlayManager ov : ovs) {
+                SimTransport st = (SimTransport)ov.getTransport();
+                int load = st.in + st.out; // XXX Is this OK?
+                //int load = st.out; // XXX Is this OK?
+                if (load > 0) {
+                    fsum += load;
+                    fssum += (load * load);
+                    fcount += 1;
+                }
+            }            
+            sumFairness += ((fsum * fsum) / (fcount * fssum));
+            countFairness++;
+
+        }
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+        System.out.println("ave. fairness index=" + (sumFairness / countFairness));
+        System.out.println("ave. hops=" + (sumHops / count));
+        System.out.println("publish message count=" + SimTransportOracle.messageCount());
+        
+        seedTrans.fin();
     }
     
     static public void main(String[] args) {
 //        for (int i = 0; i < 10; i++) {
-        for (int i = 100; i <= 1000; i += 100) {
-        prepareRandomDataSet(i);
-        System.out.print(i);
+//        for (int i = 100; i <= 1000; i += 100) {
+        prepareRandomDataSet(10);
+//        System.out.print(i);
         OverlayManager.setOverlay("org.piax.ov.ovs.itsg.ITSkipGraphZen");
         eval();
-        OverlayManager.setOverlay("org.piax.ov.ovs.isg.ISkipGraph");
-        eval();
-        OverlayManager.setOverlay("org.piax.ov.ovs.rksg.RKSkipGraph");
-        eval();
-        System.out.println();
+//        OverlayManager.setOverlay("org.piax.ov.ovs.isg.ISkipGraph");
+//        eval();
+//        OverlayManager.setOverlay("org.piax.ov.ovs.rksg.RKSkipGraph");
+//        eval();
+//        System.out.println();
         }
 //        OverlayManager.setOverlay("org.piax.ov.ovs.risg.RISkipGraph");
 //        System.out.println("-- RISG");
 //        eval();
 //        }
 
-    }
+ //   }
 }
 //}

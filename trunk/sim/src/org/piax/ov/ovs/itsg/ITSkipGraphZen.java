@@ -3,17 +3,22 @@ package org.piax.ov.ovs.itsg;
 import static org.piax.trans.Literals.map;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.grlea.log.SimpleLogger;
 import org.piax.ov.OverlayManager;
 import org.piax.ov.common.KeyComparator;
+import org.piax.ov.common.Range;
 import org.piax.ov.ovs.risg.RISkipGraph.Op;
 import org.piax.ov.ovs.rrsg.RRSkipGraph;
 import org.piax.ov.ovs.skipgraph.MembershipVector;
 import org.piax.ov.ovs.skipgraph.SkipGraph;
 import org.piax.ov.ovs.skipgraph.SkipGraph.Arg;
+import org.piax.ov.ovs.skipgraph.SkipGraph.CheckOp;
 
 import org.piax.trans.Node;
 import org.piax.trans.ResponseChecker;
@@ -26,10 +31,10 @@ public class ITSkipGraphZen extends SkipGraph {
     MaxTable maxes;
     
     static public enum Arg {
-        MAX, OPTIONAL_NODE, TOP_MAX, ONOFF, DIRECTION
+        MAX, OPTIONAL_NODE, TOP_MAX, ONOFF, DIRECTION, RANGE, END_NODE
     }
     static public enum Op {
-        BUDDY_WITH_MAX, SET_LINK_WITH_MAX, GET_LINK_WITH_MAX, UPDATE_MAX, UPDATE_LEFT_NEIGHBOR_MAX, UPDATE_LEVEL_MAX_NODE
+        BUDDY_WITH_MAX, SET_LINK_WITH_MAX, GET_LINK_WITH_MAX, UPDATE_MAX, UPDATE_LEFT_NEIGHBOR_MAX, UPDATE_LEVEL_MAX_NODE, RANGE_SEARCH, FOUND_IN_RANGE, NOT_FOUND_IN_RANGE, SEARCH_DESCENDANTS
     }
     
     public static int LEFT_MAX = 0;
@@ -50,7 +55,35 @@ public class ITSkipGraphZen extends SkipGraph {
     public Comparable<?> getRangeEnd() {
         return rangeEnd;
     }
+
+    protected Map<Object,Object> foundInRangeOp(Node v) {
+        return map((Object)SkipGraph.Arg.OP, (Object)Op.FOUND_IN_RANGE).map(SkipGraph.Arg.NODE, v);
+    }
     
+    protected Map<Object,Object> notFoundInRangeOp(Node v) {
+        return map((Object)SkipGraph.Arg.OP, (Object)Op.NOT_FOUND_IN_RANGE).map(SkipGraph.Arg.NODE, v);
+    }
+	
+    protected Map<Object,Object> rangeSearchOp(Node startNode, Range searchRange, int level) {
+        return map((Object)SkipGraph.Arg.OP, (Object)Op.RANGE_SEARCH).map(SkipGraph.Arg.NODE, startNode).map(Arg.RANGE, searchRange).map(SkipGraph.Arg.LEVEL, level);
+    }
+    
+    protected Map<Object,Object> rangeSendOp(Range searchRange, int level, Object body) {
+        return map((Object)SkipGraph.Arg.OP, (Object)Op.RANGE_SEARCH).map(Arg.RANGE, searchRange).map(SkipGraph.Arg.LEVEL, level).map(SkipGraph.Arg.BODY, body);
+    }
+    
+    protected Map<Object,Object> searchDescendantsOp(Range searchRange, Node endNode, int level, Object body) {
+        return map((Object)SkipGraph.Arg.OP, (Object)Op.SEARCH_DESCENDANTS).map(Arg.RANGE, searchRange).map(Arg.END_NODE, endNode).map(SkipGraph.Arg.LEVEL, level).map(SkipGraph.Arg.BODY, body);
+    }
+
+    protected Map<Object,Object> opUpdate(Map<Object,Object> mes, Range searchRange, int level) {
+        Map<Object,Object> newMes = new HashMap<Object,Object>();
+        newMes.putAll(mes);
+        newMes.put(Arg.RANGE, searchRange);
+        newMes.put(SkipGraph.Arg.LEVEL, level);
+        return newMes;
+    }
+
     protected Map<Object,Object> getLinkWithMaxOp(Node u, int side, int level, Comparable<?> max, Node optionalNode) {
         return map((Object)SkipGraph.Arg.OP, (Object)Op.GET_LINK_WITH_MAX).map(SkipGraph.Arg.NODE, u).map(SkipGraph.Arg.SIDE, side).map(SkipGraph.Arg.LEVEL, level).map(Arg.MAX, max).map(Arg.OPTIONAL_NODE, optionalNode);
     }
@@ -407,7 +440,7 @@ public class ITSkipGraphZen extends SkipGraph {
 //        if ((l == getMaxLevel() - 1) && compare((Comparable<?>)maxes.get(LEFT_NEIGHBOR_MAX, l), topMax) < 0) {
 //            maxes.put(LEFT_NEIGHBOR_MAX, l, topMax);
 //        }
-        if (l==getMaxLevel()-1){
+        if (l == getMaxLevel() - 1){
         	if (maxes.get(LEFT_NEIGHBOR_MAX,l)!=null&& topMax!=null) {
         		if (compare((Comparable<?>)maxes.get(LEFT_NEIGHBOR_MAX, l), topMax) < 0) {
                   maxes.put(LEFT_NEIGHBOR_MAX, l, topMax);
@@ -449,6 +482,208 @@ public class ITSkipGraphZen extends SkipGraph {
             }
         }
     }
+
+    protected class SearchResult {
+        public List<Node> matches;
+        public List<Node> unmatches;
+        public List<List<Id>> mVias;
+        public List<List<Id>> uVias;
+        public SearchResult() {
+            matches = new ArrayList<Node>();
+            unmatches = new ArrayList<Node>();
+            mVias = new ArrayList<List<Id>>();
+            uVias = new ArrayList<List<Id>>();
+        }
+        public void addMatch(Node node) {
+            matches.add(node);
+        }
+        public void addUnmatch(Node node) {
+            unmatches.add(node);
+        }
+        public void addMatchVia(List<Id> via) {
+            mVias.add(via);
+        }
+        public void addUnmatchVia(List<Id> via) {
+            uVias.add(via);
+        }
+    }
+
+    SearchResult rangeSearchResult;
+
+    protected void onReceiveRangeSearchResult(Node sender, Map<Object,Object> arg) {
+        Op op = (Op) arg.get(SkipGraph.Arg.OP);
+        List<Id> via = getVia(arg);
+        Node node = (Node) arg.get(SkipGraph.Arg.NODE);
+        if (op == Op.FOUND_IN_RANGE){
+            rangeSearchResult.addMatch(node);
+            rangeSearchResult.addMatchVia(via);
+        }
+        else {
+            rangeSearchResult.addUnmatch(node);
+            rangeSearchResult.addUnmatchVia(via);
+        }
+    }
+    
+    @Override
+    public Node search(Comparable<?> key) {
+     // not implemented in this class.
+        return null;
+    }
+
+    @Override
+    public List<Node> search(Range range) {
+        // not implemented in this class.
+        return null;
+    }
+    
+    
+    @Override
+    public List<Node> overlapSearch(Comparable<?> key) {
+        return overlapSearch(new Range(key, key));
+    }
+    
+    @Override
+    public void overlapSend(Range range, Object body) {
+        self.trans.setParameter(SimTransportOracle.Param.NestedWait, Boolean.FALSE); // for better performance
+        onReceiveRangeSearchOp(self, rangeSendOp(range, getMaxLevel(), body));
+    }
+    
+    @Override
+    public List<Node> overlapSearch(Range range) {
+        self.trans.setParameter(SimTransportOracle.Param.NestedWait, Boolean.FALSE); // for better performance
+        rangeSearchResult = new SearchResult();
+        onReceiveRangeSearchOp(self, rangeSearchOp(self, range, getMaxLevel()));
+        synchronized(rangeSearchResult) {
+            try {
+                rangeSearchResult.wait(50);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        Collections.sort(rangeSearchResult.matches, new KeySortComparator());
+        return rangeSearchResult.matches;
+    }
+    
+    protected void onRangeMatch(Node sender, Map<Object,Object> args) {
+        Node startNode = (Node) args.get(SkipGraph.Arg.NODE);
+        List<Id> via = getVia(args);
+        //Range searchRange = (Range) args.get(Arg.RANGE);
+        Object body = args.get(SkipGraph.Arg.BODY);
+        try {
+            if (body != null) {
+                inspectObject(body, self, args);
+            }
+            else {
+                startNode.send(setVia(foundInRangeOp(self), via));
+            }
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    
+    private boolean rangeOverlaps(Range range1, Range range2) {
+        return ((compare(range2.min, range1.min) <= 0 && compare(range1.min, range2.max) <= 0) ||
+                (compare(range2.min, range1.max) <= 0 && compare(range1.max, range2.max) <= 0) ||
+                (compare(range1.min, range2.min) <= 0 && compare(range2.min, range1.max) <= 0) ||
+                (compare(range1.min, range2.max) <= 0 && compare(range2.max, range1.max) <= 0));
+    }
+    
+    protected void onReceiveRangeSearchOp(Node sender, Map<Object, Object> args) {
+        Node u = (Node) args.get(SkipGraph.Arg.NODE);
+        Range range = (Range)args.get(Arg.RANGE);
+        int l = (int)(Integer)args.get(SkipGraph.Arg.LEVEL);
+        Comparable<?> searchKey = range.min;
+        Object body = args.get(SkipGraph.Arg.BODY);
+        List<Id> via = getVia(args);
+       
+        try {
+        if (compare((Comparable<?>)getKey(),(Comparable<?>)searchKey)==0){
+            if (getMaxLevel() > 0) {
+                self.send(setVia(searchDescendantsOp(range, null, getMaxLevel()-1, body), via));
+            }
+        }
+        else if (compare((Comparable<?>)getKey(),(Comparable<?>)searchKey)<0){
+            while(l >= 0) {
+                if (neighbors.get(R,l)!=null) {
+                    Comparable<?> sideKey = neighbors.getKey(R,l);
+                    if (compare((Comparable<?>)sideKey,(Comparable<?>)searchKey) <= 0){
+                        neighbors.get(R,l).send(setVia(rangeSearchOp(u, range, l), via));
+                        break;
+                    }
+                }
+                l--;
+            }
+        }
+        else if (compare((Comparable<?>)getKey(),(Comparable<?>)searchKey)>0){
+            while(l >= 0) {
+                if (neighbors.get(L,l)!=null) {
+                    Comparable<?> sideKey = neighbors.getKey(L,l);
+                    if (compare((Comparable<?>)sideKey,(Comparable<?>)searchKey) >= 0){
+                        neighbors.get(L,l). send(setVia(rangeSearchOp(u, range, l), via));
+                        break;
+                    }
+                }
+                l--;
+            }
+        }
+
+        if (l<0) {
+            if (compare((Comparable<?>)getKey(),(Comparable<?>)searchKey) <= 0){
+                self.send(setVia(searchDescendantsOp(range, null, getMaxLevel()-1, body), via));
+            }
+            else {
+                if (neighbors.get(L,0)!=null) {
+                    neighbors.get(L,0).send(setVia(searchDescendantsOp(range, null, getMaxLevel()-1, body), via));
+                }
+                else {  //there’s no match. Inform startNode abt this.
+                    u.send(setVia(notFoundInRangeOp(self), via));
+                }
+            }
+        }
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    protected void onReceiveSearchDescendantsOp(Node sender, Map<Object, Object> args) {
+        Node u = (Node) args.get(SkipGraph.Arg.NODE);
+        Range range = (Range)args.get(Arg.RANGE);
+        Comparable<?> searchKey = range.max;
+        int l = (int)(Integer)args.get(SkipGraph.Arg.LEVEL);
+        // int topOp = (int)(Integer)args.get(Arg.TopOp); Unused?
+        Node endNode = (Node)args.get(Arg.END_NODE); 
+        Object body = args.get(SkipGraph.Arg.BODY);
+        List<Id> via = getVia(args);
+        
+        if (endNode==null) {
+            l=getMaxLevel()-1;
+        }
+        if (rangeOverlaps(range, new Range(key, rangeEnd))) {
+            onRangeMatch(sender, args);
+        }
+        while (l >= 0) {
+            if (neighbors.get(L,l) != null &&
+                maxes.get(LEFT_NEIGHBOR_MAX,l)!=null &&
+                compare((Comparable<?>)maxes.get(LEFT_NEIGHBOR_MAX, l),(Comparable<?>)searchKey)>=0) {
+                try {
+                    if (endNode!=null && neighbors.get(L,l)!=endNode) {
+                        neighbors.get(L,l).send(setVia(searchDescendantsOp(range, endNode, l, body), via));
+                        endNode=neighbors.get(L,l);
+                    }
+                    else if (endNode==null) {
+                        neighbors.get(L,l).send(setVia(searchDescendantsOp(range, null, l, body), via));
+                        endNode=neighbors.get(L,l);
+                    }
+                }
+                catch (IOException e) {
+                }
+            }
+            l--;
+        }
+    }
+
     
     public void onReceive(Node sender, Map<Object,Object> mes) {
         Object op = mes.get(SkipGraph.Arg.OP);
@@ -467,6 +702,15 @@ public class ITSkipGraphZen extends SkipGraph {
         }
         else if (op == Op.UPDATE_LEVEL_MAX_NODE) {
             onReceiveUpdateLevelMaxNodeOp(sender, mes);
+        }
+        else if (op == Op.RANGE_SEARCH) {
+            onReceiveRangeSearchOp(sender, mes);
+        }
+        else if (op == Op.SEARCH_DESCENDANTS) {
+            onReceiveSearchDescendantsOp(sender, mes);
+        }
+        else if (op == Op.FOUND_IN_RANGE || op == Op.NOT_FOUND_IN_RANGE)  {
+            onReceiveRangeSearchResult(sender, mes);
         }
         else {
             super.onReceive(sender, mes);
