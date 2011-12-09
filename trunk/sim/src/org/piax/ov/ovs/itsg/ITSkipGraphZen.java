@@ -68,6 +68,10 @@ public class ITSkipGraphZen extends SkipGraph {
         return map((Object)SkipGraph.Arg.OP, (Object)Op.RANGE_SEARCH).map(SkipGraph.Arg.NODE, startNode).map(Arg.RANGE, searchRange).map(SkipGraph.Arg.LEVEL, level);
     }
     
+    protected Map<Object,Object> rangeSearchOp(Node startNode, Range searchRange, int level, Object body) {
+        return map((Object)SkipGraph.Arg.OP, (Object)Op.RANGE_SEARCH).map(SkipGraph.Arg.NODE, startNode).map(Arg.RANGE, searchRange).map(SkipGraph.Arg.LEVEL, level).map(SkipGraph.Arg.BODY, body);
+    }
+    
     protected Map<Object,Object> rangeSendOp(Range searchRange, int level, Object body) {
         return map((Object)SkipGraph.Arg.OP, (Object)Op.RANGE_SEARCH).map(Arg.RANGE, searchRange).map(SkipGraph.Arg.LEVEL, level).map(SkipGraph.Arg.BODY, body);
     }
@@ -608,7 +612,7 @@ public class ITSkipGraphZen extends SkipGraph {
                 if (neighbors.get(R,l)!=null) {
                     Comparable<?> sideKey = neighbors.getKey(R,l);
                     if (compare((Comparable<?>)sideKey,(Comparable<?>)searchKey) <= 0){
-                        neighbors.get(R,l).send(setVia(rangeSearchOp(u, range, l), via));
+                        neighbors.get(R,l).send(setVia(rangeSearchOp(u, range, l, body), via));
                         break;
                     }
                 }
@@ -620,7 +624,7 @@ public class ITSkipGraphZen extends SkipGraph {
                 if (neighbors.get(L,l)!=null) {
                     Comparable<?> sideKey = neighbors.getKey(L,l);
                     if (compare((Comparable<?>)sideKey,(Comparable<?>)searchKey) >= 0){
-                        neighbors.get(L,l). send(setVia(rangeSearchOp(u, range, l), via));
+                        neighbors.get(L,l). send(setVia(rangeSearchOp(u, range, l, body), via));
                         break;
                     }
                 }
@@ -633,10 +637,10 @@ public class ITSkipGraphZen extends SkipGraph {
                 self.send(setVia(searchDescendantsOp(range, null, getMaxLevel()-1, body), via));
             }
             else {
-                if (neighbors.get(L,0)!=null) {
+                if (neighbors.get(L,0) != null) {
                     neighbors.get(L,0).send(setVia(searchDescendantsOp(range, null, getMaxLevel()-1, body), via));
                 }
-                else {  //there’s no match. Inform startNode abt this.
+                else {  //there's no match. Inform startNode abt this.
                     u.send(setVia(notFoundInRangeOp(self), via));
                 }
             }
@@ -648,7 +652,6 @@ public class ITSkipGraphZen extends SkipGraph {
     }
 
     protected void onReceiveSearchDescendantsOp(Node sender, Map<Object, Object> args) {
-        Node u = (Node) args.get(SkipGraph.Arg.NODE);
         Range range = (Range)args.get(Arg.RANGE);
         Comparable<?> searchKey = range.max;
         int l = (int)(Integer)args.get(SkipGraph.Arg.LEVEL);
@@ -664,9 +667,8 @@ public class ITSkipGraphZen extends SkipGraph {
             onRangeMatch(sender, args);
         }
         while (l >= 0) {
-            if (neighbors.get(L,l) != null &&
-                maxes.get(LEFT_NEIGHBOR_MAX,l)!=null &&
-                compare((Comparable<?>)maxes.get(LEFT_NEIGHBOR_MAX, l),(Comparable<?>)searchKey)>=0) {
+            Comparable<?> leftNeighborMax =(Comparable<?>) maxes.get(LEFT_NEIGHBOR_MAX, l);
+            if (neighbors.get(L,l) != null && leftNeighborMax!=null && compare(leftNeighborMax, searchKey) >= 0) {
                 try {
                     if (endNode!=null && neighbors.get(L,l)!=endNode) {
                         neighbors.get(L,l).send(setVia(searchDescendantsOp(range, endNode, l, body), via));

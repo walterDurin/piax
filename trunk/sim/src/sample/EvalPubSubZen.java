@@ -181,7 +181,7 @@ public class EvalPubSubZen {
     static public void main(String[] args) {
 //        for (int i = 0; i < 10; i++) {
 //        for (int i = 100; i <= 1000; i += 100) {
-        prepareRandomDataSet(10);
+        prepareRandomDataSet(100);
 //        System.out.print(i);
         OverlayManager.setOverlay("org.piax.ov.ovs.itsg.ITSkipGraphZen");
         eval();

@@ -218,9 +218,9 @@ public class SimTransportOracle implements Runnable {
                 if (nid1 != null && nid2 != null && nid1.equals(nid2)) {
                     // same node!
                 }
-                else {
-                    countMessage();
-                } */
+                else {*/
+                countMessage();
+                //} 
                 lock.wait();
                 Thread.yield();
             } catch (InterruptedException e) {
