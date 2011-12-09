@@ -365,7 +365,7 @@ public class ITSkipGraphZen extends SkipGraph {
         Comparable<?> max = (Comparable<?>) args.get(Arg.MAX);
         int l = getMaxLevel();
         try {
-            if (u.equals(self)) {
+            if (u.equals(self)) {  // at newcomer node
             	
             	while (l > 0) {
             		boolean sendingFlag = true;
@@ -385,14 +385,14 @@ public class ITSkipGraphZen extends SkipGraph {
                     neighbors.get(R, 0).send(updateMaxOp(u, max));
                 }  // forward the update messages to neighboring node.
             }
-            else {
+            else {   // at other nodes
                 boolean changeFlag = false;
                 boolean sendingFlag = false;
                 if ((compare((Comparable<?>)maxes.get(LEFT_MAX, getMaxLevel()), max) < 0)) {
                     maxes.put(LEFT_MAX, getMaxLevel(), max);
                     changeFlag = true;
                     sendingFlag = true;
-                    for (int i=0;i<getMaxLevel();i++) {                          // send updateLNM to all nodes in LevelMax List
+                    for (int i=0;i<getMaxLevel();i++) {                          // send updateLNM to all nodes in LMN list
                     	if(maxes.get(LEFT_MAX_NODE, i)!= null) {
                     		//System.out.println("44444444444"+maxes.get(LEFT_MAX_NODE, i));
                     		Node to = (Node)maxes.get(LEFT_MAX_NODE, i);
@@ -460,7 +460,7 @@ public class ITSkipGraphZen extends SkipGraph {
         boolean changeFlag = false;
         if (l < getMaxLevel() - 1) {
             if ((maxes.get(LEFT_NEIGHBOR_MAX, l)!= null && compare((Comparable<?>)maxes.get(LEFT_NEIGHBOR_MAX, l),(Comparable<?>) max) < 0)||(direction==DOWN && maxes.get(LEFT_NEIGHBOR_MAX, l)== null)) {
-                changeFlag = true;
+                changeFlag = true;maxes.put(LEFT_NEIGHBOR_MAX, l, max);
             }
         }
         while (changeFlag && l < getMaxLevel() - 1) {
@@ -724,4 +724,5 @@ public class ITSkipGraphZen extends SkipGraph {
         return "[" + getKey() + "," + getRangeEnd() + "]\n" + neighbors.toString() + maxes.toString() + "max Level= " + getMaxLevel();//+ " maxTable size= "+ maxes.size() ;
     }
 }
+
 
