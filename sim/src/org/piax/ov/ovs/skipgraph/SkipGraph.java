@@ -191,7 +191,8 @@ public class SkipGraph implements Overlay {
     }
     
     protected int compare(Comparable<?> a, Comparable<?>b) {
-        return KeyComparator.getInstance().compare(a, b);
+        int ret = KeyComparator.getInstance().compare(a, b);
+        return ret;
     }
 
     protected Map<Object,Object> searchOp(Node startNode, Comparable<?> searchKey, int level) {

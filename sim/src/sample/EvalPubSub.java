@@ -40,14 +40,14 @@ public class EvalPubSub {
     
     static public void prepareSampleDataSet() {
         subscribers = new ArrayList<Range>(8);
-        subscribers.add(new Range(2, 7));
-        subscribers.add(new Range(5, 15));
-        subscribers.add(new Range(8, 10));
-        subscribers.add(new Range(9, 14));
-        subscribers.add(new Range(13, 16));
-        subscribers.add(new Range(17, 22));
-        subscribers.add(new Range(18, 20));
-        subscribers.add(new Range(20, 25));
+        subscribers.add(new Range((double)2, (double)7));
+        subscribers.add(new Range((double)5, (double)15));
+        subscribers.add(new Range((double)8, (double)10));
+        subscribers.add(new Range((double)9, (double)14));
+        subscribers.add(new Range((double)13, (double)16));
+        subscribers.add(new Range((double)17, (double)22));
+        subscribers.add(new Range((double)18, (double)20));
+        subscribers.add(new Range((double)20, (double)25));
         publishers = new ArrayList<Integer>();
         publishers.add(0);
         events = new ArrayList<Double>();
@@ -137,7 +137,7 @@ public class EvalPubSub {
                     sumHops += (via == null ? 0 : via.size());
                 }
                 //System.out.println("send hops =" + (via == null ? 0 : via.size()));
-                //System.out.println("sub=[" + node.getAttr(OverlayManager.KEY) + "," + node.getAttr(OverlayManager.RANGE_END) + "]");
+                System.out.println("sub=[" + node.getAttr(OverlayManager.KEY) + "," + node.getAttr(OverlayManager.RANGE_END) + "]");
             }
         };
         double sumFairness = 0;
@@ -147,18 +147,14 @@ public class EvalPubSub {
             double fsum = 0;
             double fssum = 0;
             double fcount = 0;
-            
-            for (OverlayManager ov : ovs) {
-                SimTransport st = (SimTransport)ov.getTransport();
-                st.clearCount();
-            }
-            
+
             ovs.get(publishers.get(i)).overlapSend(events.get(i), ex);
             
             for (OverlayManager ov : ovs) {
                 SimTransport st = (SimTransport)ov.getTransport();
                 int load = st.in + st.out; // XXX Is this OK?
                 //int load = st.out; // XXX Is this OK?
+                //System.out.println("load=" + load);
                 if (load > 0) {
                     fsum += load;
                     fssum += (load * load);
@@ -180,20 +176,20 @@ public class EvalPubSub {
         System.out.println("ave. hops=" + (sumHops / count));
         System.out.println("publish message count=" + SimTransportOracle.messageCount());
         
-        seedTrans.fin();
+        //seedTrans.fin();
     }
     
     static public void main(String[] args) {
 //        for (int i = 0; i < 10; i++) {
         // prepareRandomDataSet();
         prepareSampleDataSet();
-        //OverlayManager.setOverlay("org.piax.ov.ovs.itsg.ITSkipGraphZen");
-        //System.out.println("-- ITSG");
-        //eval();
-        
-        OverlayManager.setOverlay("org.piax.ov.ovs.isg.ISkipGraph");
-        System.out.println("-- ISG");
+        OverlayManager.setOverlay("org.piax.ov.ovs.itsg.ITSkipGraphZen");
+        System.out.println("-- ITSG");
         eval();
+        
+//        OverlayManager.setOverlay("org.piax.ov.ovs.isg.ISkipGraph");
+//        System.out.println("-- ISG");
+//        eval();
 //        OverlayManager.setOverlay("org.piax.ov.ovs.rksg.RKSkipGraph");
 //        System.out.println("-- RKSG");
 //        eval();
