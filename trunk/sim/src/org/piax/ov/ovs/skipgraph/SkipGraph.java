@@ -536,6 +536,7 @@ public class SkipGraph implements Overlay {
         String s = "";
         s += "ID=" + id + (deleteFlag? "(DELETED)" : "") + "\n";
         s += "Key=" + getKey() + "\n";
+        s += "Self=" + self.toString() + "\n"; 
         s += "MV=" + m.toString() + "\n";
         s += "Table:" + neighbors.toString() + "\n";
         return s;
