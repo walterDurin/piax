@@ -40,18 +40,29 @@ public class EvalPubSub {
     
     static public void prepareSampleDataSet() {
         subscribers = new ArrayList<Range>(8);
-        subscribers.add(new Range((double)2, (double)7));
-        subscribers.add(new Range((double)5, (double)15));
+        subscribers.add(new Range((double)2, (double)20));
+        subscribers.add(new Range((double)3, (double)21));
+        subscribers.add(new Range((double)4, (double)20));
+        subscribers.add(new Range((double)5, (double)7));
+        subscribers.add(new Range((double)6, (double)8));
+        subscribers.add(new Range((double)7, (double)9));
         subscribers.add(new Range((double)8, (double)10));
-        subscribers.add(new Range((double)9, (double)14));
-        subscribers.add(new Range((double)13, (double)16));
-        subscribers.add(new Range((double)17, (double)22));
-        subscribers.add(new Range((double)18, (double)20));
-        subscribers.add(new Range((double)20, (double)25));
+        subscribers.add(new Range((double)9, (double)11));
+        subscribers.add(new Range((double)10, (double)26));
+        subscribers.add(new Range((double)11, (double)27));
+        subscribers.add(new Range((double)12, (double)28));
+        subscribers.add(new Range((double)13, (double)29));
+        subscribers.add(new Range((double)14, (double)30));
+        subscribers.add(new Range((double)15, (double)31));
+        subscribers.add(new Range((double)16, (double)31));
+        subscribers.add(new Range((double)17, (double)31));
+        subscribers.add(new Range((double)18, (double)31));
+        subscribers.add(new Range((double)19, (double)31));
+        subscribers.add(new Range((double)20, (double)31));
         publishers = new ArrayList<Integer>();
         publishers.add(0);
         events = new ArrayList<Double>();
-        events.add(10.0);
+        events.add(20.0);
     }
     
     static public void prepareRandomDataSet() {
@@ -93,7 +104,7 @@ public class EvalPubSub {
     static double count = 0;
     static double sumHops = 0;
     
-    static public void eval() {
+    static public int eval() {
         SimTransport seedTrans = new SimTransport();
         OverlayManager seedOv = new OverlayManager(seedTrans);
         seedOv.putRange(new Range((double)0, (double)0));
@@ -150,6 +161,13 @@ public class EvalPubSub {
 
             ovs.get(publishers.get(i)).overlapSend(events.get(i), ex);
             
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+            
             for (OverlayManager ov : ovs) {
                 SimTransport st = (SimTransport)ov.getTransport();
                 int load = st.in + st.out; // XXX Is this OK?
@@ -162,21 +180,15 @@ public class EvalPubSub {
                 }
             }            
             sumFairness += ((fsum * fsum) / (fcount * fssum));
+            System.out.println("count/fcount=" + count + "/" + fcount);
             countFairness++;
-
         }
-        try {
-            Thread.sleep(2000);
-        } catch (InterruptedException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-
         System.out.println("ave. fairness index=" + (sumFairness / countFairness));
         System.out.println("ave. hops=" + (sumHops / count));
         System.out.println("publish message count=" + SimTransportOracle.messageCount());
         
-        //seedTrans.fin();
+        seedTrans.fin();
+        return (int)count;
     }
     
     static public void main(String[] args) {
@@ -185,8 +197,8 @@ public class EvalPubSub {
         prepareSampleDataSet();
         OverlayManager.setOverlay("org.piax.ov.ovs.itsg.ITSkipGraphZen");
         System.out.println("-- ITSG");
-        eval();
-        
+        while (eval() >= 14) {
+        }
 //        OverlayManager.setOverlay("org.piax.ov.ovs.isg.ISkipGraph");
 //        System.out.println("-- ISG");
 //        eval();

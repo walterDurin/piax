@@ -40,14 +40,14 @@ public class EvalPubSubZen {
     
     
     
-    static public void prepareRandomDataSet(int nodes) {
+    static public void prepareRandomDataSet(int nodes, int range) {
 
         int numberOfNodes = nodes;
 
-        int numberOfEvents = 1;
+        int numberOfEvents = 10;
         int maxValue = 100;
 
-        int maxRangeWidth = 20;
+        int maxRangeWidth = range;
 
         // subscribers;
         subscribers = new ArrayList<Range>(numberOfNodes);
@@ -96,7 +96,7 @@ public class EvalPubSubZen {
             ov.setSeed(seed);
             ov.putRange(range);
             try {
-                Thread.sleep(1);
+                Thread.sleep(100);
             } catch (InterruptedException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
@@ -104,14 +104,7 @@ public class EvalPubSubZen {
             ovs.add(ov);
         }
         
-        try {
-            Thread.sleep(2000);
-        } catch (InterruptedException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-        
-        System.out.print(" " + SimTransportOracle.messageCount());
+        //System.out.print(" " + SimTransportOracle.messageCount());
         SimTransportOracle.clearMessageCount();
         
         // XXX dump all nodes
@@ -147,55 +140,67 @@ public class EvalPubSubZen {
                 SimTransport st = (SimTransport)ov.getTransport();
                 st.clearCount();
             }
-            
+            //System.out.println("pub=" + events.get(i));
             ovs.get(publishers.get(i)).overlapSend(events.get(i), ex);
-            
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
             for (OverlayManager ov : ovs) {
                 SimTransport st = (SimTransport)ov.getTransport();
                 int load = st.in + st.out; // XXX Is this OK?
+                //System.out.println("load=" + load);
                 //int load = st.out; // XXX Is this OK?
                 if (load > 0) {
                     fsum += load;
                     fssum += (load * load);
                     fcount += 1;
                 }
-            }            
+            }
             sumFairness += ((fsum * fsum) / (fcount * fssum));
+            System.out.println("count/fcount=" + count + "/" + fcount);
             countFairness++;
-
+            count = 0; 
         }
-        try {
-            Thread.sleep(2000);
-        } catch (InterruptedException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
+        //System.out.print(" " + SimTransportOracle.messageCount());        
 
-        System.out.println("ave. fairness index=" + (sumFairness / countFairness));
-        System.out.println("ave. hops=" + (sumHops / count));
-        System.out.println("publish message count=" + SimTransportOracle.messageCount());
+        //System.out.println("ave. fairness index=" + (sumFairness / countFairness));
+        //System.out.println("ave. hops=" + (sumHops / count));
+        //System.out.println("publish message count=" + SimTransportOracle.messageCount());
         
         seedTrans.fin();
     }
     
     static public void main(String[] args) {
-//        for (int i = 0; i < 10; i++) {
-//        for (int i = 100; i <= 1000; i += 100) {
-        prepareRandomDataSet(100);
-//        System.out.print(i);
-        OverlayManager.setOverlay("org.piax.ov.ovs.itsg.ITSkipGraphZen");
-        eval();
-//        OverlayManager.setOverlay("org.piax.ov.ovs.isg.ISkipGraph");
-//        eval();
-//        OverlayManager.setOverlay("org.piax.ov.ovs.rksg.RKSkipGraph");
-//        eval();
-//        System.out.println();
-        }
-//        OverlayManager.setOverlay("org.piax.ov.ovs.risg.RISkipGraph");
-//        System.out.println("-- RISG");
-//        eval();
-//        }
-
- //   }
+//        for (int i = 10; i <= 100; i += 10) {
+        int i = 80;
+            prepareRandomDataSet(20, i);
+            int ImesCount = 0; 
+            int ITmesCount = 0; 
+            int RKmesCount = 0; 
+            int RImesCount = 0; 
+            //for (int j = 0; j < 10; j++) {
+            System.out.println("-- ISG");
+                OverlayManager.setOverlay("org.piax.ov.ovs.isg.ISkipGraph");
+                eval();
+                ImesCount += SimTransportOracle.messageCount();
+                System.out.println("-- ITSG");
+                OverlayManager.setOverlay("org.piax.ov.ovs.itsg.ITSkipGraphZen");
+                eval();
+                ITmesCount += SimTransportOracle.messageCount();
+                System.out.println("-- RKSG");
+                OverlayManager.setOverlay("org.piax.ov.ovs.rksg.RKSkipGraph");
+                eval();
+                RKmesCount += SimTransportOracle.messageCount();
+                System.out.println("-- RISG");
+                OverlayManager.setOverlay("org.piax.ov.ovs.risg.RISkipGraph");
+                eval();
+                RImesCount += SimTransportOracle.messageCount();
+            //}
+            System.out.println(String.format("%d %d %d %d %d", i, ImesCount, ITmesCount, RKmesCount, RImesCount));
+        //}
+   }
 }
 //}

@@ -377,7 +377,6 @@ public class ITSkipGraphZen extends SkipGraph {
                     	if (neighbors.get(R,l)!= null){
                     	neighbors.get(R, l).send(updateLeftNeighborMaxOp(l, (Comparable<?>)maxes.get(LEFT_MAX, l), (Comparable<?>)maxes.get(LEFT_MAX, getMaxLevel()),DOWN));
                     	}
-                    		
                     }
                     // send updateLNM to all the right side neighbors
                 }
@@ -650,6 +649,10 @@ public class ITSkipGraphZen extends SkipGraph {
             e.printStackTrace();
         }
     }
+    
+    public Comparable<?> getRangeEnd(Node node) {
+        return (Comparable<?>)node.getAttr(OverlayManager.RANGE_END);
+    }
 
     protected void onReceiveSearchDescendantsOp(Node sender, Map<Object, Object> args) {
         Range range = (Range)args.get(Arg.RANGE);
@@ -659,7 +662,7 @@ public class ITSkipGraphZen extends SkipGraph {
         Node endNode = (Node)args.get(Arg.END_NODE); 
         Object body = args.get(SkipGraph.Arg.BODY);
         List<Id> via = getVia(args);
-        
+       
         if (endNode==null) {
             l=getMaxLevel()-1;
         }
@@ -670,11 +673,13 @@ public class ITSkipGraphZen extends SkipGraph {
             Comparable<?> leftNeighborMax =(Comparable<?>) maxes.get(LEFT_NEIGHBOR_MAX, l);
             if (neighbors.get(L,l) != null && leftNeighborMax!=null && compare(leftNeighborMax, searchKey) >= 0) {
                 try {
-                    if (endNode!=null && neighbors.get(L,l)!=endNode) {
+                    if (endNode != null && !neighbors.get(L, l).equals(endNode)) {
+                        System.out.println("sending to:" + neighbors.get(L, l) + " from:" + self + "/end=" + endNode);
                         neighbors.get(L,l).send(setVia(searchDescendantsOp(range, endNode, l, body), via));
                         endNode=neighbors.get(L,l);
                     }
                     else if (endNode==null) {
+                        System.out.println("sending to:" + neighbors.get(L, l) + " from:" + self + "/end=null");
                         neighbors.get(L,l).send(setVia(searchDescendantsOp(range, null, l, body), via));
                         endNode=neighbors.get(L,l);
                     }
