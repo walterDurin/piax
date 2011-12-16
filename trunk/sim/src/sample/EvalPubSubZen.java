@@ -176,7 +176,7 @@ public class EvalPubSubZen {
     static public void main(String[] args) {
 //        for (int i = 10; i <= 100; i += 10) {
         int i = 80;
-            prepareRandomDataSet(20, i);
+            prepareRandomDataSet(100, i);
             int ImesCount = 0; 
             int ITmesCount = 0; 
             int RKmesCount = 0; 

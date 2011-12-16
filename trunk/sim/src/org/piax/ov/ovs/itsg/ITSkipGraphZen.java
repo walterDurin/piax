@@ -31,7 +31,7 @@ public class ITSkipGraphZen extends SkipGraph {
     MaxTable maxes;
     
     static public enum Arg {
-        MAX, OPTIONAL_NODE, TOP_MAX, ONOFF, DIRECTION, RANGE, END_NODE
+        MAX, OPTIONAL_NODE, TOP_MAX, ONOFF, DIRECTION, RANGE, BOUNDARY
     }
     static public enum Op {
         BUDDY_WITH_MAX, SET_LINK_WITH_MAX, GET_LINK_WITH_MAX, UPDATE_MAX, UPDATE_LEFT_NEIGHBOR_MAX, UPDATE_LEVEL_MAX_NODE, RANGE_SEARCH, FOUND_IN_RANGE, NOT_FOUND_IN_RANGE, SEARCH_DESCENDANTS
@@ -76,8 +76,8 @@ public class ITSkipGraphZen extends SkipGraph {
         return map((Object)SkipGraph.Arg.OP, (Object)Op.RANGE_SEARCH).map(Arg.RANGE, searchRange).map(SkipGraph.Arg.LEVEL, level).map(SkipGraph.Arg.BODY, body);
     }
     
-    protected Map<Object,Object> searchDescendantsOp(Range searchRange, Comparable<?> endNode, int level, Object body) {
-        return map((Object)SkipGraph.Arg.OP, (Object)Op.SEARCH_DESCENDANTS).map(Arg.RANGE, searchRange).map(Arg.END_NODE, endNode).map(SkipGraph.Arg.LEVEL, level).map(SkipGraph.Arg.BODY, body);
+    protected Map<Object,Object> searchDescendantsOp(Range searchRange, Comparable<?> boundary, int level, Object body) {
+        return map((Object)SkipGraph.Arg.OP, (Object)Op.SEARCH_DESCENDANTS).map(Arg.RANGE, searchRange).map(Arg.BOUNDARY, boundary).map(SkipGraph.Arg.LEVEL, level).map(SkipGraph.Arg.BODY, body);
     }
 
     protected Map<Object,Object> opUpdate(Map<Object,Object> mes, Range searchRange, int level) {
@@ -696,7 +696,7 @@ public class ITSkipGraphZen extends SkipGraph {
         Comparable<?> searchKey = range.max;
         int l = (int)(Integer)args.get(SkipGraph.Arg.LEVEL);
         // int topOp = (int)(Integer)args.get(Arg.TopOp); Unused?
-        Comparable<?> endNode = (Comparable<?>)args.get(Arg.END_NODE); 
+        Comparable<?> boundary = (Comparable<?>)args.get(Arg.BOUNDARY);
         Object body = args.get(SkipGraph.Arg.BODY);
         List<Id> via = getVia(args);
 
@@ -712,16 +712,15 @@ public class ITSkipGraphZen extends SkipGraph {
             Comparable<?> leftNeighborMax =(Comparable<?>) maxes.get(LEFT_NEIGHBOR_MAX, l);
             if (neighbors.get(L,l) != null && leftNeighborMax!=null && compare(leftNeighborMax, searchKey) >= 0) {
                 try {
-
-                    if (endNode!=null && compare((Comparable<?>)neighbors.getKey(L,l),(Comparable<?>)endNode)>0) {
-
-                        neighbors.get(L,l).send(setVia(searchDescendantsOp(range, endNode, l, body), via));
-                        endNode=neighbors.getKey(L,l);
+                    if (boundary != null && compare(neighbors.getKey(L, l), boundary) > 0) {
+                        //System.out.println("sending to:" + neighbors.get(L, l) + " from:" + self + "/end=" + boundary);
+                        neighbors.get(L,l).send(setVia(searchDescendantsOp(range, boundary, l, body), via));
+                        boundary=neighbors.getKey(L,l);
                     }
-                    else if (endNode==null) {
-//                        System.out.println("sending to:" + neighbors.get(L, l) + " from:" + self + "/end=null");
+                    else if (boundary==null) {
+                        //System.out.println("sending to:" + neighbors.get(L, l) + " from:" + self + "/end=null");
                         neighbors.get(L,l).send(setVia(searchDescendantsOp(range, null, l, body), via));
-                        endNode=neighbors.getKey(L,l);
+                        boundary=neighbors.getKey(L,l);
                     }
                 }
                 catch (IOException e) {
