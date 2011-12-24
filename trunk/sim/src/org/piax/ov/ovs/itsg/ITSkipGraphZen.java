@@ -34,7 +34,7 @@ public class ITSkipGraphZen extends SkipGraph {
         MAX, OPTIONAL_NODE, TOP_MAX, ONOFF, DIRECTION, RANGE, BOUNDARY
     }
     static public enum Op {
-        BUDDY_WITH_MAX, SET_LINK_WITH_MAX, GET_LINK_WITH_MAX, UPDATE_MAX, UPDATE_LEFT_NEIGHBOR_MAX, UPDATE_LEVEL_MAX_NODE, RANGE_SEARCH, FOUND_IN_RANGE, NOT_FOUND_IN_RANGE, SEARCH_DESCENDANTS
+        BUDDY_WITH_MAX, SET_LINK_WITH_MAX, GET_LINK_WITH_MAX, UPDATE_MAX, UPDATE_LEFT_NEIGHBOR_MAX, UPDATE_LEVEL_MAX_NODE, RANGE_SEARCH, FOUND_IN_RANGE, NOT_FOUND_IN_RANGE, SEARCH_DESCENDANTS,REQUEST_UPDATE_RIGHT_NODE
     }
     
     public static int LEFT_MAX = 0;
@@ -45,7 +45,8 @@ public class ITSkipGraphZen extends SkipGraph {
     public static int OFF = 0;
     public static int DOWN = 1;
     public static int UP = 0;
-      
+    public static int VER = 2;
+    public static int HOR = 3; 
     public ITSkipGraphZen(Node self) {
         super(self);
         this.rangeEnd = (Comparable<?>)self.getAttr(OverlayManager.RANGE_END);
@@ -94,6 +95,9 @@ public class ITSkipGraphZen extends SkipGraph {
     
     protected Map<Object,Object> buddyWithMaxOp(Node node, int side, int level, MembershipVector m, Comparable<?> currentMax, Node optionalNode) {
         return map((Object)SkipGraph.Arg.OP, (Object)Op.BUDDY_WITH_MAX).map(SkipGraph.Arg.NODE, node).map(SkipGraph.Arg.SIDE, side).map(SkipGraph.Arg.LEVEL, level).map(SkipGraph.Arg.VAL, m).map(Arg.MAX, currentMax).map(Arg.OPTIONAL_NODE, optionalNode);
+    }
+    protected Map<Object,Object> requestUpdateRightNodeOp(Node node,int level) {
+        return map((Object)SkipGraph.Arg.OP, (Object)Op.REQUEST_UPDATE_RIGHT_NODE).map(SkipGraph.Arg.NODE, node).map(SkipGraph.Arg.LEVEL, level);
     }
     
     protected Map<Object,Object> setLinkWithMaxOp(Node node, int level, Comparable<?> max, Node optionalNode) {
@@ -186,10 +190,17 @@ public class ITSkipGraphZen extends SkipGraph {
                         neighbors.put(L, l, newNeighbor);
                         Comparable<?> max = (Comparable<?>) r.get(Arg.MAX);
                         maxes.put(LEFT_NEIGHBOR_MAX, l - 1 , max);
-                        
+                        if (neighbors.get(L,l)==null){
+                        	 if (neighbors.get(L, l-1)!=null){    //if upper level doesnt have any neighbor, put this node in the LMN list of the left side neighbor 
+                             	neighbors.get(L, l-1).send(updateLevelMaxNodeOp(self,l-1,ON));
+                             }
+                        }
                     }
                     else {
                         neighbors.put(L, l, null);
+                        if (neighbors.get(L, l-1)!=null){    //if upper level doesnt have any neighbor, put this node in the LMN list of the left side neighbor 
+                         	neighbors.get(L, l-1).send(updateLevelMaxNodeOp(self,l-1,ON));
+                         }
                     }
                     maxes.put(LEFT_MAX, l, max((Comparable<?>)maxes.get(LEFT_MAX, l-1),(Comparable<?>)maxes.get(LEFT_NEIGHBOR_MAX,l-1)));
                     if (neighbors.get(R, l - 1) != null) {
@@ -208,9 +219,10 @@ public class ITSkipGraphZen extends SkipGraph {
                     if (neighbors.get(R, l) == null && neighbors.get(L, l) == null) break;
                 }
                
-                maxLevel = l; if (maxLevel > 0 && neighbors.get(L, maxLevel-1)!= null){
-                	neighbors.get(L,maxLevel-1).send(updateLevelMaxNodeOp(self,maxLevel-1,ON));	
-                }
+                maxLevel = l; 
+//                if (maxLevel > 0 && neighbors.get(L, maxLevel-1)!= null){
+//                	neighbors.get(L,maxLevel-1).send(updateLevelMaxNodeOp(self,maxLevel-1,ON));	
+//                }
                 
                self.send(updateMaxOp(self,(Comparable<?>)maxes.get(LEFT_MAX,maxLevel)));
                
@@ -262,7 +274,38 @@ public class ITSkipGraphZen extends SkipGraph {
         change_neighbor_with_max(u, side, l, max,optionalNode);
     }
     
-   
+   protected void onReceiveRequestUpdateRightNodeOp(Node sender,Map<Object, Object> args){
+	   Node u = (Node) args.get(SkipGraph.Arg.NODE);
+	   Comparable<?> uKey = getKey(u);
+	   Comparable<?> uMax = getRangeEnd(u);
+	   int l = (int)((Integer)args.get(SkipGraph.Arg.LEVEL));
+	   
+	   if (compare((Comparable<?>)getRangeEnd(),(Comparable<?>)0.0)>0 && compare((Comparable<?>)uMax,(Comparable<?>)maxes.get(LEFT_MAX, getMaxLevel())) <0) {
+		   if (neighbors.get(R, l+1)!=null&neighbors.get(L, l)!=null){
+			   try { 
+					neighbors.get(L, l).send(requestUpdateRightNodeOp(u,l));
+				}
+				 catch (IOException e) {
+					  e.printStackTrace();
+				 }
+		   }
+		   while(l<getMaxLevel()){
+			   if (neighbors.get(R, l+1)!=null&& compare((Comparable<?>)uKey,(Comparable<?>)neighbors.getKey(R,l+1))<0){
+					try { 
+						if (!neighbors.get(R, l+1).equals(neighbors.get(R, l))){
+						neighbors.get(R, l+1).send(updateLeftNeighborMaxOp(l, uMax, null,UP));
+						}
+					}
+					 catch (IOException e) {
+						  e.printStackTrace();
+					 }
+				}			 
+			   l++;
+		   }
+		   
+	   }
+	   
+   }
     
     protected void onReceiveBuddyWithMaxOp(Node sender, Map<Object,Object> args) {
         Node u = (Node) args.get(SkipGraph.Arg.NODE);
@@ -273,10 +316,11 @@ public class ITSkipGraphZen extends SkipGraph {
         Comparable<?> max = (Comparable<?>) args.get(Arg.MAX);
         List<Id> via = getVia(args);
         int side = (int)((Integer)args.get(SkipGraph.Arg.SIDE));
+        int level = l;
        
         if (!m.existsElementAt(l+1)) {
         
-        	if (getMaxLevel()>0)
+        	if (getMaxLevel()>0&& side==R)
         	try {
         		if (neighbors.get(L,getMaxLevel()-1) != null) {
         			neighbors.get(L, getMaxLevel()-1).send(updateLevelMaxNodeOp(self,getMaxLevel()-1,OFF));	
@@ -293,21 +337,46 @@ public class ITSkipGraphZen extends SkipGraph {
         }
        
         if (side == L) {
+        	Comparable<?> uMax = getRangeEnd(u);
         	if (compare((Comparable<?>)neighbors.getKey(R, l),uKey)==0) {
         		maxes.put(LEFT_MAX_NODE, l, null);
-        	}
+        	} 
             Comparable<?> currentMax=null;
             if (m.equals(l+1, val)) {  //this node: turn back
                 currentMax = max;
                     change_neighbor_with_max(u,R,l+1,currentMax,null);
+                    if (compare((Comparable<?>)getRangeEnd(),(Comparable<?>)0.0)>0 && compare((Comparable<?>)uMax,(Comparable<?>)maxes.get(LEFT_MAX, getMaxLevel())) <0) {
+                    	if (neighbors.get(L, l)!=null){
+                    		try { 
+                    			neighbors.get(L, l).send(requestUpdateRightNodeOp(u,l));	
+                    		}
+                    		 catch (IOException e) {
+           					  e.printStackTrace();
+           				 }
+                    	}
+                    }
             }									
             else {  //intermediate nodes
-            		Comparable<?> uMax = getRangeEnd(u);
             		
-            		if (compare((Comparable<?>)getRangeEnd(),(Comparable<?>)0)>0 && compare((Comparable<?>)uMax,(Comparable<?>)maxes.get(LEFT_MAX, getMaxLevel())) <0) {
-            			if (neighbors.get(R, l+1)!=null){
-            				try {
-            					neighbors.get(R, l+1).send(updateLeftNeighborMaxOp(l, uMax, null,UP));	
+            		if (compare((Comparable<?>)getRangeEnd(),(Comparable<?>)0.0)>0 && compare((Comparable<?>)uMax,(Comparable<?>)maxes.get(LEFT_MAX, getMaxLevel())) <0) {
+            			while (level<getMaxLevel()){
+            				if (neighbors.get(R, level+1)!=null&& compare((Comparable<?>)uKey,(Comparable<?>)neighbors.getKey(R,level+1))<0){
+//                				System.out.println("SPOT!"+uMax+ "\t "+l+"\t "+maxes.get(LEFT_MAX, getMaxLevel()));
+                				try {
+                					if (!neighbors.get(R, level+1).equals(neighbors.get(R, level))){
+                					neighbors.get(R, level+1).send(updateLeftNeighborMaxOp(level, uMax, null,UP));	
+                					}
+                				}
+                				 catch (IOException e) {
+                					  e.printStackTrace();
+                				 }
+                			}
+            				level++;
+            			}
+            			if (neighbors.get(R, level+1)!=null&& compare((Comparable<?>)uKey,(Comparable<?>)neighbors.getKey(R,level+1))<0){
+//            				System.out.println("SPOT!"+uMax+ "\t "+l+"\t "+maxes.get(LEFT_MAX, getMaxLevel()));
+            				try { 
+            					neighbors.get(R, level+1).send(updateLeftNeighborMaxOp(level, uMax, null,UP));	
             				}
             				 catch (IOException e) {
             					  e.printStackTrace();
@@ -338,7 +407,7 @@ public class ITSkipGraphZen extends SkipGraph {
                 
             }
             else { //intermediate nodes
-            	if (compare((Comparable<?>)neighbors.getKey(L, l),(Comparable<?>)uKey)==0 &&(l==getMaxLevel()-1)){
+            	if (compare((Comparable<?>)neighbors.getKey(L, l),(Comparable<?>)uKey)==0 &&(neighbors.get(L, l+1)==null)){
             		optionalNode = self;
             	}
                 Comparable<?> currentMax = null;
@@ -367,12 +436,11 @@ public class ITSkipGraphZen extends SkipGraph {
     	 if (onOff == ON) {
     		 maxes.put(LEFT_MAX_NODE, l, u);
     		 try{
-    		 u.send(updateLeftNeighborMaxOp(l, null, (Comparable<?>)maxes.get(LEFT_MAX, getMaxLevel()),UP));
+    		 u.send(updateLeftNeighborMaxOp(l, null, (Comparable<?>)maxes.get(LEFT_MAX, getMaxLevel()),VER));
     		 }
     		 catch (IOException e) {
     			 
     		 }
-//    		 u.send(updateLeftNeighborMaxOp(l, null, (Comparable<?>)maxes.get(LEFT_MAX, getMaxLevel()),UP));
     	 }
     	 else {
     		 maxes.put(LEFT_MAX_NODE,l,null);
@@ -385,7 +453,6 @@ public class ITSkipGraphZen extends SkipGraph {
         int l = getMaxLevel();
         try {
             if (u.equals(self)) {  // at newcomer node
-            	
             	while (l > 0) {
             		boolean sendingFlag = true;
                     l--;
@@ -394,7 +461,13 @@ public class ITSkipGraphZen extends SkipGraph {
                     }
                     if (sendingFlag == true){ 
                     	if (neighbors.get(R,l)!= null){
-                    	neighbors.get(R, l).send(updateLeftNeighborMaxOp(l, (Comparable<?>)maxes.get(LEFT_MAX, l), (Comparable<?>)maxes.get(LEFT_MAX, getMaxLevel()),DOWN));
+                    		if (compare(rangeEnd, max)<0){
+                    			neighbors.get(R, l).send(updateLeftNeighborMaxOp(l, (Comparable<?>)maxes.get(LEFT_MAX, l), (Comparable<?>)maxes.get(LEFT_MAX, getMaxLevel()),HOR));
+                    		}
+                    		else if (compare(rangeEnd, max)==0){
+                    			neighbors.get(R, l).send(updateLeftNeighborMaxOp(l, (Comparable<?>)maxes.get(LEFT_MAX, l), (Comparable<?>)maxes.get(LEFT_MAX, getMaxLevel()),DOWN));
+                    		}
+                    			
                     	}
                     }
                     // send updateLNM to all the right side neighbors
@@ -404,7 +477,7 @@ public class ITSkipGraphZen extends SkipGraph {
                 }  // forward the update messages to neighboring node.
             }
             else {   // at other nodes
-                boolean changeFlag = false;
+                boolean changeFlag = true;
                 boolean sendingFlag = false;
                 if ((compare((Comparable<?>)maxes.get(LEFT_MAX, getMaxLevel()), max) < 0)) {
                     maxes.put(LEFT_MAX, getMaxLevel(), max);
@@ -413,50 +486,33 @@ public class ITSkipGraphZen extends SkipGraph {
                     for (int i=0;i<getMaxLevel();i++) {                          // send updateLNM to all nodes in LMN list
                     	if(maxes.get(LEFT_MAX_NODE, i)!= null) {
                     		Node to = (Node)maxes.get(LEFT_MAX_NODE, i);
-                    		to.send(updateLeftNeighborMaxOp(l,null, (Comparable<?>)maxes.get(LEFT_MAX, getMaxLevel()),UP)); 
+                    		to.send(updateLeftNeighborMaxOp(i,null, (Comparable<?>)maxes.get(LEFT_MAX, getMaxLevel()),VER)); 
                     	}
                     }
                 }
-//                l--;
-                
                 while (l > 0 && changeFlag) {
-                    l--; 
-                  
-                    	
+                    l--;
                     if (neighbors.getKey(L, l) != null && compare(neighbors.getKey(L, l), uKey) >= 0) {
-                    	if (l<getMaxLevel()-1 && neighbors.get(L,l+1)==null){
-                        	if (maxes.get(LEFT_NEIGHBOR_MAX, l) != null && max!=null &&compare((Comparable<?>)maxes.get(LEFT_NEIGHBOR_MAX, l), (Comparable<?>)max) < 0) {
-                        		maxes.put(LEFT_NEIGHBOR_MAX, l, max);
-                        	}
-                        }
-                        else if (l<getMaxLevel()-1 && neighbors.get(L,l+1)!=null && max!=null &&compare(neighbors.getKey(L, l+1), uKey) <0){
+                        if (l<getMaxLevel()-1 && neighbors.get(L,l+1)!=null && max!=null &&compare(neighbors.getKey(L, l+1), uKey) <0){
                         	if (maxes.get(LEFT_NEIGHBOR_MAX, l) != null && compare((Comparable<?>)maxes.get(LEFT_NEIGHBOR_MAX, l), (Comparable<?>)max) < 0) {
                         		maxes.put(LEFT_NEIGHBOR_MAX, l, max);
                         	}
                         }
-                        else if (maxes.get(LEFT_NEIGHBOR_MAX, l) != null && compare((Comparable<?>)maxes.get(LEFT_NEIGHBOR_MAX, l), (Comparable<?>)maxes.get(LEFT_MAX, l + 1)) < 0) {
-                            maxes.put(LEFT_NEIGHBOR_MAX, l, maxes.get(LEFT_MAX, l + 1));
-                            changeFlag = true;
-                        }
+//                        else if (maxes.get(LEFT_NEIGHBOR_MAX, l) != null && compare((Comparable<?>)maxes.get(LEFT_MAX, l+1), max((Comparable<?>)maxes.get(LEFT_MAX, l),(Comparable<?>)maxes.get(LEFT_NEIGHBOR_MAX, l))) != 0) {
+//                            maxes.put(LEFT_NEIGHBOR_MAX, l, maxes.get(LEFT_MAX, l + 1));
+//                            changeFlag = true;
+//                        }
                         
                         else {
                             changeFlag = false;
-//                        	changeFlag = true;
                         }
                     }
                     else if (neighbors.getKey(L,l)!= null && compare(neighbors.getKey(L,l),uKey)<0){
                         if (compare((Comparable<?>)maxes.get(LEFT_MAX, l), (Comparable<?>)maxes.get(LEFT_MAX, l + 1)) < 0) {
                             maxes.put(LEFT_MAX, l, maxes.get(LEFT_MAX, l + 1));
-//                    	if (compare((Comparable<?>)maxes.get(LEFT_MAX, l), (Comparable<?>)max) < 0) {
-//                    		maxes.put(LEFT_MAX, l, max);
                             if (neighbors.get(R, l)!=null){
                             	neighbors.get(R, l).send(updateLeftNeighborMaxOp(l, (Comparable<?>)maxes.get(LEFT_MAX, l), (Comparable<?>)maxes.get(LEFT_MAX, getMaxLevel()),UP));	
                             }
-                            changeFlag = true;
-                        }
-                        else {
-                            changeFlag = false;
-//                        	changeFlag = true;
                         }
                     }
                     else if (neighbors.getKey(L, l)==null){
@@ -466,6 +522,7 @@ public class ITSkipGraphZen extends SkipGraph {
                         }
                         changeFlag = true;
                     }
+//                    l--; 
                 }
                 if (sendingFlag) {
                 	if (neighbors.get(R,0)!=null){
@@ -484,42 +541,90 @@ public class ITSkipGraphZen extends SkipGraph {
         int direction = (Integer)args.get(Arg.DIRECTION);
         Comparable<?> max = (Comparable<?>) args.get(Arg.MAX);
         Comparable<?> topMax = (Comparable<?>) args.get(Arg.TOP_MAX);
-        if (l == (getMaxLevel()- 1)){
-        	if (maxes.get(LEFT_NEIGHBOR_MAX,l)!=null&& topMax!=null) {
-        		if (compare((Comparable<?>)maxes.get(LEFT_NEIGHBOR_MAX, l), topMax) < 0) {
-                  maxes.put(LEFT_NEIGHBOR_MAX, l, topMax);
-        		}
-        	} 
-        	else if (maxes.get(LEFT_NEIGHBOR_MAX,l)==null&&topMax!=null) {    		
-        		maxes.put(LEFT_NEIGHBOR_MAX, l, topMax);
-        	}
-        	
-        	if (maxes.get(LEFT_NEIGHBOR_MAX,l)!=null&&compare((Comparable<?>)maxes.get(LEFT_NEIGHBOR_MAX,l),(Comparable<?>)maxes.get(LEFT_MAX,l+1))>0){
-        		maxes.put(LEFT_MAX, l+1, (Comparable<?>)maxes.get(LEFT_NEIGHBOR_MAX,l));
-        		
-        	}
+        boolean changeFlag=true;
+        if (direction==VER) {
+//        	System.out.println("at level "+l + " of "+ getKey(self)+ " with value of "+topMax);
+    		if (maxes.get(LEFT_NEIGHBOR_MAX,l)!=null && topMax!=null){
+    			if (compare((Comparable<?>)maxes.get(LEFT_NEIGHBOR_MAX,l),topMax)<0){
+    				maxes.put(LEFT_NEIGHBOR_MAX, l, topMax);
+    				changeFlag=true;
+    			}
+    		}
+    		else if (maxes.get(LEFT_NEIGHBOR_MAX, l)==null&topMax!=null){
+    			maxes.put(LEFT_NEIGHBOR_MAX,l,topMax);
+    			changeFlag=true;
+    		}
+    		
+            while (l<getMaxLevel()-1 && changeFlag){
+            	
+            	if(neighbors.get(L, l+1)==null&&l<getMaxLevel()-1){
+            		if (compare((Comparable<?>)maxes.get(LEFT_MAX, l+1),max((Comparable<?>)maxes.get(LEFT_NEIGHBOR_MAX, l),(Comparable<?>)maxes.get(LEFT_MAX, l)))<0) {
+            			maxes.put(LEFT_MAX, l+1, max((Comparable<?>)maxes.get(LEFT_NEIGHBOR_MAX, l),(Comparable<?>)maxes.get(LEFT_MAX, l)));
+            			try {
+            				if (neighbors.get(R, l+1)!=null){
+            					neighbors.get(R, l+1).send(updateLeftNeighborMaxOp(l + 1, (Comparable<?>)maxes.get(LEFT_MAX, l + 1), null,UP));
+            				}
+            			} catch (IOException e){
+            			}
+            		}
+            	}
+            	l++;
+            }	
+    	}
+        else if (direction==HOR){
+        	 if ((maxes.get(LEFT_NEIGHBOR_MAX, l)!= null && compare((Comparable<?>)maxes.get(LEFT_NEIGHBOR_MAX, l),(Comparable<?>) max) < 0)||(maxes.get(LEFT_NEIGHBOR_MAX, l)== null)) {
+                 changeFlag = true;
+                 maxes.put(LEFT_NEIGHBOR_MAX, l, max);
+               }
+        	 if (l==getMaxLevel()-1){
+        		 if (compare((Comparable<?>)maxes.get(LEFT_MAX, l+1),max((Comparable<?>)maxes.get(LEFT_NEIGHBOR_MAX, l),(Comparable<?>)maxes.get(LEFT_MAX, l)))<0) {
+            			maxes.put(LEFT_MAX, l+1, max((Comparable<?>)maxes.get(LEFT_NEIGHBOR_MAX, l),(Comparable<?>)maxes.get(LEFT_MAX, l)));
+        		 }
+        	 } 
+        	 else if (l<getMaxLevel()-1 && changeFlag){
+        		  while (l<getMaxLevel()-1 && changeFlag){
+                 		if (compare((Comparable<?>)maxes.get(LEFT_MAX, l+1),max((Comparable<?>)maxes.get(LEFT_NEIGHBOR_MAX, l),(Comparable<?>)maxes.get(LEFT_MAX, l)))<0) {
+                 			maxes.put(LEFT_MAX, l+1, max((Comparable<?>)maxes.get(LEFT_NEIGHBOR_MAX, l),(Comparable<?>)maxes.get(LEFT_MAX, l)));
+                 			try {
+                 				if (neighbors.get(R, l+1)!=null){
+                 					neighbors.get(R, l+1).send(updateLeftNeighborMaxOp(l + 1, (Comparable<?>)maxes.get(LEFT_MAX, l + 1), null,UP));
+                 				}
+                 			} catch (IOException e){
+                 			}
+                 		}
+                 		else {
+                 			changeFlag=false;
+                 		}
+                  	l++;
+                  }	
+        	 }
         }
-        boolean changeFlag = false;
-        if (l < getMaxLevel() - 1) {
+        else if ((l<(getMaxLevel()-1)&&direction!=VER)||(direction==DOWN)){
+//        	if (direction==DOWN) {
+//        		int truth = (int)getMaxLevel() - (int)l;
+//        		System.out.println("truth: "+truth);
+//        	}
             if ((maxes.get(LEFT_NEIGHBOR_MAX, l)!= null && compare((Comparable<?>)maxes.get(LEFT_NEIGHBOR_MAX, l),(Comparable<?>) max) < 0)||(direction==DOWN && maxes.get(LEFT_NEIGHBOR_MAX, l)== null)) {
-                changeFlag = true;
-                maxes.put(LEFT_NEIGHBOR_MAX, l, max);
+              changeFlag = true;
+              maxes.put(LEFT_NEIGHBOR_MAX, l, max);
             }
-            while (changeFlag && l < getMaxLevel()-1) {
-                 if (compare((Comparable<?>)maxes.get(LEFT_MAX, l+1),max((Comparable<?>)maxes.get(LEFT_NEIGHBOR_MAX, l),(Comparable<?>)maxes.get(LEFT_MAX, l)))<0) {
-                        maxes.put(LEFT_MAX, l + 1, max((Comparable<?>)maxes.get(LEFT_NEIGHBOR_MAX, l),(Comparable<?>)maxes.get(LEFT_MAX, l)));
-                        try { if (neighbors.get(R, l+1)!=null)
-                            neighbors.get(R, l + 1).send(updateLeftNeighborMaxOp(l + 1, (Comparable<?>)maxes.get(LEFT_MAX, l + 1), null,UP));
-                        } catch (IOException e) {
-                        }
-                    }
-                    else {
-                        changeFlag = false;
-                    }
-                    l++;
-                }
-            }
+            while (l<getMaxLevel()-1 && changeFlag){
+           		if (compare((Comparable<?>)maxes.get(LEFT_MAX, l+1),max((Comparable<?>)maxes.get(LEFT_NEIGHBOR_MAX, l),(Comparable<?>)maxes.get(LEFT_MAX, l)))<0) {
+           			maxes.put(LEFT_MAX, l+1, max((Comparable<?>)maxes.get(LEFT_NEIGHBOR_MAX, l),(Comparable<?>)maxes.get(LEFT_MAX, l)));
+           			try {
+           				if (neighbors.get(R, l+1)!=null){
+           					neighbors.get(R, l+1).send(updateLeftNeighborMaxOp(l + 1, (Comparable<?>)maxes.get(LEFT_MAX, l + 1), null,UP));
+           				}
+           			} catch (IOException e){
+           			}
+           		}
+           		else {
+           			changeFlag=false;
+           		}
+            	l++;
+            }	
         }
+}
        
     
 
@@ -696,12 +801,12 @@ public class ITSkipGraphZen extends SkipGraph {
         Comparable<?> searchKey = range.max;
         int l = (int)(Integer)args.get(SkipGraph.Arg.LEVEL);
         // int topOp = (int)(Integer)args.get(Arg.TopOp); Unused?
-        Comparable<?> boundary = (Comparable<?>)args.get(Arg.BOUNDARY);
+        Comparable<?> boundary = (Comparable<?>)args.get(Arg.BOUNDARY); 
         Object body = args.get(SkipGraph.Arg.BODY);
         List<Id> via = getVia(args);
 
         l=getMaxLevel()-1;
-//        if (endNode==null) {
+//        if (boundary==null) {
 //            l=getMaxLevel()-1;
 //        }
 
@@ -712,13 +817,14 @@ public class ITSkipGraphZen extends SkipGraph {
             Comparable<?> leftNeighborMax =(Comparable<?>) maxes.get(LEFT_NEIGHBOR_MAX, l);
             if (neighbors.get(L,l) != null && leftNeighborMax!=null && compare(leftNeighborMax, searchKey) >= 0) {
                 try {
-                    if (boundary != null && compare(neighbors.getKey(L, l), boundary) > 0) {
-                        //System.out.println("sending to:" + neighbors.get(L, l) + " from:" + self + "/end=" + boundary);
+
+                    if (boundary!=null && compare((Comparable<?>)neighbors.getKey(L,l),(Comparable<?>)boundary)>0) {
+
                         neighbors.get(L,l).send(setVia(searchDescendantsOp(range, boundary, l, body), via));
                         boundary=neighbors.getKey(L,l);
                     }
                     else if (boundary==null) {
-                        //System.out.println("sending to:" + neighbors.get(L, l) + " from:" + self + "/end=null");
+//                        System.out.println("sending to:" + neighbors.get(L, l) + " from:" + self + "/end=null");
                         neighbors.get(L,l).send(setVia(searchDescendantsOp(range, null, l, body), via));
                         boundary=neighbors.getKey(L,l);
                     }
@@ -754,6 +860,9 @@ public class ITSkipGraphZen extends SkipGraph {
         }
         else if (op == Op.SEARCH_DESCENDANTS) {
             onReceiveSearchDescendantsOp(sender, mes);
+        }
+        else if (op == Op.REQUEST_UPDATE_RIGHT_NODE) {
+            onReceiveRequestUpdateRightNodeOp(sender, mes);
         }
         else if (op == Op.FOUND_IN_RANGE || op == Op.NOT_FOUND_IN_RANGE)  {
             onReceiveRangeSearchResult(sender, mes);
