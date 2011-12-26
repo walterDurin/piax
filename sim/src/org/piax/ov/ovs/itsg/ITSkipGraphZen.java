@@ -281,7 +281,7 @@ public class ITSkipGraphZen extends SkipGraph {
 	   int l = (int)((Integer)args.get(SkipGraph.Arg.LEVEL));
 	   
 	   if (compare((Comparable<?>)getRangeEnd(),(Comparable<?>)0.0)>0 && compare((Comparable<?>)uMax,(Comparable<?>)maxes.get(LEFT_MAX, getMaxLevel())) <0) {
-		   if (neighbors.get(R, l+1)!=null&neighbors.get(L, l)!=null){
+		   if (neighbors.get(R, l+1)!=null&& neighbors.get(L, l)!=null){
 			   try { 
 					neighbors.get(L, l).send(requestUpdateRightNodeOp(u,l));
 				}
@@ -346,7 +346,7 @@ public class ITSkipGraphZen extends SkipGraph {
                 currentMax = max;
                     change_neighbor_with_max(u,R,l+1,currentMax,null);
                     if (compare((Comparable<?>)getRangeEnd(),(Comparable<?>)0.0)>0 && compare((Comparable<?>)uMax,(Comparable<?>)maxes.get(LEFT_MAX, getMaxLevel())) <0) {
-                    	if (neighbors.get(L, l)!=null){
+                    	if (l==0&&neighbors.get(L, l)!=null){
                     		try { 
                     			neighbors.get(L, l).send(requestUpdateRightNodeOp(u,l));	
                     		}
@@ -877,6 +877,7 @@ public class ITSkipGraphZen extends SkipGraph {
         return "[" + getKey() + "," + getRangeEnd() + "]\n" + neighbors.toString() + maxes.toString() + "max Level= " + getMaxLevel();//+ " maxTable size= "+ maxes.size() ;
     }
 }
+
 
 
 
