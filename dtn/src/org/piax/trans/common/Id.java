@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
+import android.provider.Settings;
 
 import org.piax.trans.util.MersenneTwister;
 
@@ -28,11 +29,12 @@ public class Id implements Serializable, Comparable<Id> {
     private static MersenneTwister rand;
     static {
         long seed = System.nanoTime();
-        try {
-            seed += Arrays.hashCode(InetAddress.getLocalHost().getAddress());
-        } catch (UnknownHostException e) {
+        //try {
+        //    String deviceId = Settings.Secure.getString(.getContentResolver(), Settings.System.ANDROID_ID);  
+        //    seed += Arrays.hashCode();InetAddress.getLocalHost().getAddress());
+        //} catch (UnknownHostException e) {
             seed += new Object().hashCode();
-        }
+        //}
         rand = new MersenneTwister(seed);
     }
 

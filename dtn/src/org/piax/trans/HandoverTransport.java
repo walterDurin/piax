@@ -16,7 +16,7 @@ import org.piax.trans.target.RecipientIdWithLocator;
 
 //import android.util.Log;
 
-public class MultiLocatorTransport implements Transport {
+public class HandoverTransport implements Transport {
     PeerId id;
     String name;
     PeerLocator locator;
@@ -48,25 +48,25 @@ public class MultiLocatorTransport implements Transport {
         }
     }
 
-    public MultiLocatorTransport() {
+    public HandoverTransport() {
         this (PeerId.newId(), null);
     }
 
-    public MultiLocatorTransport(PeerId id, String name) {
+    public HandoverTransport(PeerId id, String name) {
         this (id, name, null, null);
     }
 
-    public MultiLocatorTransport(String name, PeerLocator locator) {
+    public HandoverTransport(String name, PeerLocator locator) {
         this (PeerId.newId(), name, locator, null);
     }
 
-    public MultiLocatorTransport(byte[] magic) {
+    public HandoverTransport(byte[] magic) {
         this(PeerId.newId(), null, null, magic);
     }
 
     // create new transport sharing underlaying IdTransport
     // Should it be Singleton model?
-    public MultiLocatorTransport(MultiLocatorTransport trans, byte[] magic) {
+    public HandoverTransport(HandoverTransport trans, byte[] magic) {
         this.id = trans.id;
         this.receiveListeners = new ArrayList<ReceiveListener>();
         this.requestListeners = new ArrayList<RequestListener>();
@@ -79,7 +79,7 @@ public class MultiLocatorTransport implements Transport {
         }
     }
 
-    public MultiLocatorTransport(PeerId id, String name, PeerLocator locator, byte[] magic) {
+    public HandoverTransport(PeerId id, String name, PeerLocator locator, byte[] magic) {
         this.id = id;
         this.name = name;
         this.locator = locator;

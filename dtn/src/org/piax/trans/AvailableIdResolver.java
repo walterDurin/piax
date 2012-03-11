@@ -17,8 +17,6 @@ import org.piax.trans.msgframe.MessagingLeaf;
 import org.piax.trans.msgframe.NoSuchPeerException;
 import org.piax.trans.msgframe.RPCInvoker;
 
-
-
 //  IdResolver that only manages available neighbor Id/Locator mappings.
 
 public class AvailableIdResolver extends RPCInvoker implements IdResolverIf {
