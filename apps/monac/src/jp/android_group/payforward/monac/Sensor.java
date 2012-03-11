@@ -10,8 +10,8 @@ import org.piax.ov.jmes.MessageData;
 import org.piax.ov.jmes.von.VONEntry;
 import org.piax.ov.jmes.MessageSecurityManager;
 
-import com.android.future.usb.UsbAccessory;
-import com.android.future.usb.UsbManager;
+import android.hardware.usb.UsbAccessory;
+import android.hardware.usb.UsbManager;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -134,7 +134,7 @@ public class Sensor extends Activity implements Runnable {
                 String action = intent.getAction();
                 if (ACTION_USB_PERMISSION.equals(action)) {
                     synchronized (this) {
-                        UsbAccessory accessory = UsbManager.getAccessory(intent);
+                        UsbAccessory accessory = (UsbAccessory) intent.getParcelableExtra(UsbManager.EXTRA_ACCESSORY);
                         if (intent.getBooleanExtra(
                                                    UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
                             openAccessory(accessory);
@@ -145,7 +145,8 @@ public class Sensor extends Activity implements Runnable {
                         mPermissionRequestPending = false;
                     }
                 } else if (UsbManager.ACTION_USB_ACCESSORY_DETACHED.equals(action)) {
-                    UsbAccessory accessory = UsbManager.getAccessory(intent);
+                    UsbAccessory accessory = (UsbAccessory) intent.getParcelableExtra(UsbManager.EXTRA_ACCESSORY);
+                    //UsbAccessory accessory = UsbManager.getAccessory(intent);
                     if (accessory != null && accessory.equals(mAccessory)) {
                         closeAccessory();
                     }
@@ -164,8 +165,7 @@ public class Sensor extends Activity implements Runnable {
         
         requestWindowFeature(Window.FEATURE_NO_TITLE);
 
-
-        mUsbManager = UsbManager.getInstance(this);
+        mUsbManager = (UsbManager) getSystemService(Context.USB_SERVICE);
         mPermissionIntent = PendingIntent.getBroadcast(this, 0, new Intent(
 				ACTION_USB_PERMISSION), 0);
         IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);

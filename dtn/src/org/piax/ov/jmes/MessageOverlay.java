@@ -6,17 +6,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.piax.gnt.ProtocolUnsupportedException;
+import org.piax.gnt.ReceiveListener;
+import org.piax.gnt.RequestListener;
+import org.piax.gnt.SecurityManager;
+import org.piax.gnt.Target;
+import org.piax.gnt.Transport;
+import org.piax.gnt.handover.Peer;
+import org.piax.gnt.target.RecipientId;
 import org.piax.ov.Overlay;
 
-import org.piax.trans.Peer;
-import org.piax.trans.ReceiveListener;
-import org.piax.trans.RequestListener;
-import org.piax.trans.SecurityManager;
-import org.piax.trans.Target;
-import org.piax.trans.Transport;
-import org.piax.trans.ProtocolUnsupportedException;
 import org.piax.trans.common.ReturnSet;
-import org.piax.trans.target.RecipientId;
 
 public abstract class MessageOverlay extends Overlay implements ReceiveListener, RequestListener {
     List<CommandReceiveListener> cListeners;

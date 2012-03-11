@@ -1,6 +1,6 @@
-package org.piax.trans.target;
+package org.piax.gnt.target;
 
-import org.piax.trans.Target;
+import org.piax.gnt.Target;
 
 public class RangeCondition extends Target {
     public RangeCondition(Range range) {

@@ -1,7 +1,7 @@
 package org.piax.ov.jmes;
 
+import org.piax.gnt.Target;
 import org.piax.ov.Overlay;
-import org.piax.trans.Target;
 
 /**
  * {@.en An interface to be notified when a command is received.}

@@ -1,8 +1,8 @@
-package org.piax.trans.target;
+package org.piax.gnt.target;
 
 import java.util.List;
 
-import org.piax.trans.Target;
+import org.piax.gnt.Target;
 import org.piax.trans.common.PeerId;
 
 public class Multicast extends Target {

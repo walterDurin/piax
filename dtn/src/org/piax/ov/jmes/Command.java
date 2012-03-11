@@ -4,7 +4,7 @@ import java.util.ArrayList;
 
 import org.json.JSONArray;
 import org.json.JSONException;
-import org.piax.trans.SecurityManager;
+import org.piax.gnt.SecurityManager;
 
 public class Command {
 

@@ -31,7 +31,7 @@
         </activity>
         <activity android:name=".Draft"/>
         <activity android:name=".Setting"/>
-        <uses-library android:name="com.android.future.usb.accessory" />
+        <uses-feature android:name="android.hardware.usb.accessory"  />
     </application>
     
     <uses-permission android:name="android.permission.INTERNET" /> 

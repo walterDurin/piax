@@ -1,7 +1,7 @@
 package org.piax.ov;
 
-import org.piax.trans.SecurityManager;
-import org.piax.trans.Transport;
+import org.piax.gnt.SecurityManager;
+import org.piax.gnt.Transport;
 
 public abstract class KeyBaseOverlay extends Overlay {
     public KeyBaseOverlay(Transport trans, String overlayId, SecurityManager smgr) {

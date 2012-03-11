@@ -160,7 +160,7 @@ public class EvalPubSubZen {
                 }
             }
             sumFairness += ((fsum * fsum) / (fcount * fssum));
-            System.out.println("count/fcount=" + count + "/" + fcount);
+            //System.out.println("count/fcount=" + count + "/" + fcount);
             countFairness++;
             count = 0; 
         }
@@ -174,33 +174,33 @@ public class EvalPubSubZen {
     }
     
     static public void main(String[] args) {
-//        for (int i = 10; i <= 100; i += 10) {
-        int i = 80;
-            prepareRandomDataSet(100, i);
+        for (int i = 10; i <= 100; i += 10) {
+       // int i = 80;
+            prepareRandomDataSet(1000, i);
             int ImesCount = 0; 
             int ITmesCount = 0; 
             int RKmesCount = 0; 
             int RImesCount = 0; 
-            //for (int j = 0; j < 10; j++) {
-            System.out.println("-- ISG");
+            for (int j = 0; j < 10; j++) {
+
                 OverlayManager.setOverlay("org.piax.ov.ovs.isg.ISkipGraph");
                 eval();
                 ImesCount += SimTransportOracle.messageCount();
-                System.out.println("-- ITSG");
+
                 OverlayManager.setOverlay("org.piax.ov.ovs.itsg.ITSkipGraphZen");
                 eval();
                 ITmesCount += SimTransportOracle.messageCount();
-                System.out.println("-- RKSG");
+
                 OverlayManager.setOverlay("org.piax.ov.ovs.rksg.RKSkipGraph");
                 eval();
                 RKmesCount += SimTransportOracle.messageCount();
-                System.out.println("-- RISG");
+
                 OverlayManager.setOverlay("org.piax.ov.ovs.risg.RISkipGraph");
                 eval();
                 RImesCount += SimTransportOracle.messageCount();
-            //}
+            }
             System.out.println(String.format("%d %d %d %d %d", i, ImesCount, ITmesCount, RKmesCount, RImesCount));
-        //}
+        }
    }
 }
 //}

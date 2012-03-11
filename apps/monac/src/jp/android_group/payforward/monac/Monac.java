@@ -30,6 +30,9 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import org.piax.gnt.ReceiveListener;
+import org.piax.gnt.Target;
+import org.piax.gnt.handover.Peer;
 import org.piax.ov.Overlay;
 import org.piax.ov.jmes.MessageData;
 import org.piax.ov.jmes.Message;
@@ -44,9 +47,6 @@ import org.piax.ov.ovs.dtn.impl.AndroidMessageDB;
 import org.piax.ov.ovs.dtn.DTN;
 
 
-import org.piax.trans.Peer;
-import org.piax.trans.ReceiveListener;
-import org.piax.trans.Target;
 import org.piax.trans.common.PeerId;
 import org.piax.trans.common.PeerLocator;
 import org.piax.trans.ts.nfc.nfc.Nfc;

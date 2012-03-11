@@ -72,6 +72,10 @@ public class SimTransport implements Transport, ReceiveListener {
 		o.addReceiveListener(this);
 	}
 	
+	public ReceiveListener getReceiveListener() {
+	    return this.listener;
+	}
+	
 	// XXX BUG in this method!!!
 	private void convertNodeInstance_OLD(Map<Object,Object> mes) {
 	    for (Object key : mes.keySet()) {

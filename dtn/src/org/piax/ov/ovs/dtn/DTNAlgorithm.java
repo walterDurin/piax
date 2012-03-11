@@ -6,15 +6,15 @@ import java.util.List;
 
 
 import org.json.JSONArray;
+import org.piax.gnt.ProtocolUnsupportedException;
+import org.piax.gnt.Target;
+import org.piax.gnt.handover.Peer;
+import org.piax.gnt.handover.PeerStateDelegate;
 import org.piax.ov.jmes.Command;
 import org.piax.ov.jmes.CommandReceiveListener;
 import org.piax.ov.jmes.Message;
 import org.piax.ov.jmes.MessageData;
 
-import org.piax.trans.Peer;
-import org.piax.trans.PeerStateDelegate;
-import org.piax.trans.ProtocolUnsupportedException;
-import org.piax.trans.Target;
 
 import org.piax.trans.common.PeerId;
 import org.piax.trans.common.PeerLocator;

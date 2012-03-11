@@ -44,6 +44,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.grlea.log.DebugLevel;
 import org.grlea.log.SimpleLogger;
+import org.piax.gnt.handover.Peer;
+import org.piax.gnt.handover.PeerManager;
 import org.piax.trans.common.PeerLocator;
 import org.piax.trans.msgframe.MessageReachable;
 import org.piax.trans.msgframe.CallerHandle;

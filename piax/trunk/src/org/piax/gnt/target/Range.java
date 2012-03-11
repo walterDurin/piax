@@ -1,4 +1,4 @@
-package org.piax.trans.target;
+package org.piax.gnt.target;
 
 import java.util.ArrayList;
 import java.util.List;

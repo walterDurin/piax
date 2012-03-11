@@ -7,13 +7,13 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import org.piax.gnt.SecurityManager;
+import org.piax.gnt.handover.Peer;
+import org.piax.gnt.handover.PeerStateDelegate;
 import org.piax.ov.jmes.Message;
 import org.piax.ov.jmes.MessageData;
 import org.piax.ov.jmes.MessageOverlay;
 import org.piax.ov.jmes.MessageSecurityManager;
-import org.piax.trans.Peer;
-import org.piax.trans.PeerStateDelegate;
-import org.piax.trans.SecurityManager;
 import org.piax.trans.common.PeerId;
 import org.piax.trans.common.PeerLocator;
 
