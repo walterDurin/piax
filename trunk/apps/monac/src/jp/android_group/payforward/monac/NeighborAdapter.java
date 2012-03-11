@@ -5,7 +5,7 @@ import java.util.List;
 
 import jp.android_group.payforward.monac.R;
 
-import org.piax.trans.Peer;
+import org.piax.gnt.handover.Peer;
 import org.piax.trans.stat.LocatorStat;
 
 import android.content.Context;

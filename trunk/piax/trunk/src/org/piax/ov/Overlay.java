@@ -7,13 +7,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.piax.trans.Peer;
-import org.piax.trans.ReceiveListener;
-import org.piax.trans.RequestListener;
-import org.piax.trans.SecurityManager;
-import org.piax.trans.Target;
-import org.piax.trans.Transport;
-import org.piax.trans.ProtocolUnsupportedException;
+import org.piax.gnt.ProtocolUnsupportedException;
+import org.piax.gnt.ReceiveListener;
+import org.piax.gnt.RequestListener;
+import org.piax.gnt.SecurityManager;
+import org.piax.gnt.Target;
+import org.piax.gnt.Transport;
+import org.piax.gnt.handover.Peer;
 import org.piax.trans.common.PeerId;
 import org.piax.trans.common.ReturnSet;
 

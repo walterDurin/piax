@@ -1,10 +1,10 @@
-package org.piax.trans;
+package org.piax.gnt;
 
 /**
- * {@.en Exception thrown by Overlay implementations when the query is not supported.}
- * {@.ja Overlay 実装によりサポートされないクエリが指定されたとき; throw される Exception です．}
+ * {@.en Exception thrown by implementations when unsupported target, command or payload is specified.}
+ * {@.ja 実装によりサポートされないクエリやペイロードが指定されたとき; throw される Exception です．}
  */
-public class UnsupportedTargetException extends RuntimeException {
+public class ProtocolUnsupportedException extends RuntimeException {
     private static final long serialVersionUID = -4296454437797995503L;
 
     /**
@@ -13,7 +13,7 @@ public class UnsupportedTargetException extends RuntimeException {
      * @param message {@.en message description of the error}{@.ja エラーメッセージです．}
      * @param cause {@.en cause cause of the error (underlying exception)}{@.ja 原因となるエラーです．}
      */
-    public UnsupportedTargetException (String message, Throwable cause) {
+    public ProtocolUnsupportedException (String message, Throwable cause) {
     super(message, cause);
     }
 
@@ -22,7 +22,7 @@ public class UnsupportedTargetException extends RuntimeException {
      * {@.ja 新規 UnsupoortedTargetException を生成します．}
      * @param message {@.en message description of the error}{@.ja エラーメッセージです．}
      */
-    public UnsupportedTargetException (String message) {
+    public ProtocolUnsupportedException (String message) {
     super(message);
     }
 
@@ -31,7 +31,7 @@ public class UnsupportedTargetException extends RuntimeException {
      * {@.ja 新規 UnsupoortedTargetException を生成します．}
      * @param e {@.en exception}{@.ja exception ．}
      */
-    public UnsupportedTargetException (Exception e) {
+    public ProtocolUnsupportedException (Exception e) {
         super ("Exception thrown: " + e);
     }
     

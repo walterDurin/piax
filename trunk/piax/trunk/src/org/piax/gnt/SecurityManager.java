@@ -1,4 +1,4 @@
-package org.piax.trans;
+package org.piax.gnt;
 
 public interface SecurityManager {
     // Convert src object to network representation.

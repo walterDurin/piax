@@ -1,4 +1,4 @@
-package org.piax.trans;
+package org.piax.gnt;
 
 import java.io.IOException;
 import java.io.Serializable;

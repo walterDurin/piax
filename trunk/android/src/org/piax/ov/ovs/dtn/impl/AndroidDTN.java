@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 
-import org.piax.trans.target.RecipientIdWithLocator;
 import org.piax.trans.ts.bluetooth.BluetoothLocatorChecker;
 import org.piax.trans.ts.nfc.nfc.Nfc;
 import org.piax.trans.ts.nfc.NfcLocator;
@@ -20,6 +19,16 @@ import org.piax.trans.tsd.bluetooth.BluetoothTSD;
 
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.piax.gnt.ProtocolUnsupportedException;
+import org.piax.gnt.ReceiveListener;
+import org.piax.gnt.SecurityManager;
+import org.piax.gnt.Target;
+import org.piax.gnt.Transport;
+import org.piax.gnt.handover.HandoverTransport;
+import org.piax.gnt.handover.Peer;
+import org.piax.gnt.handover.PeerManager;
+import org.piax.gnt.handover.PeerStateDelegate;
+import org.piax.gnt.target.RecipientIdWithLocator;
 import org.piax.ov.jmes.Command;
 import org.piax.ov.jmes.Message;
 import org.piax.ov.jmes.MessageData;
@@ -31,15 +40,6 @@ import org.piax.ov.ovs.dtn.DTNException;
 import org.piax.ov.ovs.dtn.MessageDB;
 import org.piax.ov.ovs.dtn.PeerStateListener;
 
-import org.piax.trans.MobileTransport;
-import org.piax.trans.Peer;
-import org.piax.trans.PeerManager;
-import org.piax.trans.PeerStateDelegate;
-import org.piax.trans.ProtocolUnsupportedException;
-import org.piax.trans.ReceiveListener;
-import org.piax.trans.SecurityManager;
-import org.piax.trans.Target;
-import org.piax.trans.Transport;
 import org.piax.trans.common.PeerId;
 import org.piax.trans.common.PeerLocator;
 
@@ -262,9 +262,9 @@ public class AndroidDTN extends DTN implements LocatorCheckerDelegate {
     //}   
     
     private void setNfc(Nfc nfc) {
-        ((MobileTransport)trans).learnIdLocatorMapping(BROADCAST_PEER_ID, NfcLocator.getBroadcastLocator(nfc));
+        ((HandoverTransport)trans).learnIdLocatorMapping(BROADCAST_PEER_ID, NfcLocator.getBroadcastLocator(nfc));
         try {
-            ((MobileTransport)trans).addLocator(NfcLocator.getSelfLocator(nfc));
+            ((HandoverTransport)trans).addLocator(NfcLocator.getSelfLocator(nfc));
         } catch (NoSuchPeerException e) {
             e.printStackTrace();
         }
@@ -276,7 +276,7 @@ public class AndroidDTN extends DTN implements LocatorCheckerDelegate {
      */
     public void locatorAvailable(PeerLocator l) {
         try {
-            ((MobileTransport)trans).addLocator(l);
+            ((HandoverTransport)trans).addLocator(l);
 //            trans.setAvailable(true);
             for (TSD tsd: tsds) {
                 if (tsd.isRunning()) {
@@ -296,7 +296,7 @@ public class AndroidDTN extends DTN implements LocatorCheckerDelegate {
     public void locatorUnavailable(PeerLocator l) {
         //PeerLocator locator = new TcpLocator(new InetSocketAddress(addr, piaxPort));
         // XXX myself is unavailable. trans.setLocatorStatus(locator, PeerStat.TransportStateUnavailable);
-        ((MobileTransport)trans).clearLocator(l);
+        ((HandoverTransport)trans).clearLocator(l);
     }
     
     public void addTask(Runnable task) {
@@ -328,7 +328,7 @@ public class AndroidDTN extends DTN implements LocatorCheckerDelegate {
     }
 
     private void addTSD(Transport trans, PeriodicRunner pr, TSD tsd) {
-        ((MobileTransport)trans).addTSD(tsd);
+        ((HandoverTransport)trans).addTSD(tsd);
         pr.addTask(new TSDRunner(tsd,
                                  tsdKeepAliveInterval * 1000,
                                  tsdTimeoutPeriod * 1000));
@@ -506,15 +506,15 @@ public class AndroidDTN extends DTN implements LocatorCheckerDelegate {
             TSD tsd = new BluetoothTSD((Activity)ctxt);
             tsds.add(tsd);
         }
-        trans = new MobileTransport(peerId, name);
-        ((MobileTransport)trans).setPeerStateDelegate(this);
-        smgr.setPeerManager((MobileTransport)trans);
+        trans = new HandoverTransport(peerId, name);
+        ((HandoverTransport)trans).setPeerStateDelegate(this);
+        smgr.setPeerManager((HandoverTransport)trans);
         trans.addReceiveListener(this);
     }
 
     @Override
     public void setPublicKey(PeerId id, String publicKey, Date publicKeyExpiresAt) {
-        Peer peer = ((MobileTransport)trans).getPeerCreate(id);
+        Peer peer = ((HandoverTransport)trans).getPeerCreate(id);
         if (peer != null) {
             peer.publicKey = publicKey;
             peer.publicKeyExpiresAt = publicKeyExpiresAt;
@@ -563,7 +563,7 @@ public class AndroidDTN extends DTN implements LocatorCheckerDelegate {
 
     @Override
     public List<Peer> getNodes() {
-        return ((MobileTransport)trans).listSortedPeers();
+        return ((HandoverTransport)trans).listSortedPeers();
     }
 
     @Override
@@ -581,7 +581,7 @@ public class AndroidDTN extends DTN implements LocatorCheckerDelegate {
     protected void onReceiveCommand(Target target, Command com) {
         RecipientIdWithLocator idAndLocator = (RecipientIdWithLocator) target;
         
-        Peer src = ((MobileTransport)trans).getPeerCreate(new PeerId(com.senderId));
+        Peer src = ((HandoverTransport)trans).getPeerCreate(new PeerId(com.senderId));
         if (src != null) {
             alg.onReceiveCommand(src, idAndLocator.getLocator(), com);
         }
@@ -599,7 +599,7 @@ public class AndroidDTN extends DTN implements LocatorCheckerDelegate {
 
     @Override
     public void newLink(Peer peer, PeerLocator locator) {
-        ((MobileTransport)trans).newLink(peer, locator);
+        ((HandoverTransport)trans).newLink(peer, locator);
     }
 
     @Override

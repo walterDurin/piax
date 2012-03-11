@@ -31,7 +31,7 @@
  * $Id: KeyComparator.java 37 2009-10-19 20:52:01Z yos $
  */
 
-package org.piax.trans.target;
+package org.piax.gnt.target;
 
 import java.util.Comparator;
 

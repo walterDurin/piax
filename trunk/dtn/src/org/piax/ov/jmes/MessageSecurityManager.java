@@ -9,6 +9,9 @@ import java.util.Map;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.piax.gnt.SecurityManager;
+import org.piax.gnt.handover.Peer;
+import org.piax.gnt.handover.PeerManager;
 import org.piax.ov.jmes.authz.AccessKey;
 import org.piax.ov.jmes.authz.AccessToken;
 import org.piax.ov.jmes.authz.SecureSession;
@@ -25,9 +28,6 @@ import org.piax.ov.jmes.von.VONEntry;
 import org.piax.ov.jmes.von.VONException;
 import org.piax.ov.jmes.von.VONObject;
 
-import org.piax.trans.Peer;
-import org.piax.trans.PeerManager;
-import org.piax.trans.SecurityManager;
 import org.piax.trans.common.PeerId;
 
 public class MessageSecurityManager implements OLSKeyManager, SecurityManager {

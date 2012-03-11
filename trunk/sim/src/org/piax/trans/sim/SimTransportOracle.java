@@ -213,14 +213,18 @@ public class SimTransportOracle implements Runnable {
         synchronized(lock) {
             try {
                 queue.add(pack);
-                /* String nid1 = (String)pack.receiver.getAttr(AreaSim.NODE_ID_KEY);
+                /* for area sim
+                String nid1 = (String)pack.receiver.getAttr(AreaSim.NODE_ID_KEY);
                 String nid2 = (String)pack.sender.getAttr(AreaSim.NODE_ID_KEY);
                 if (nid1 != null && nid2 != null && nid1.equals(nid2)) {
-                    // same node!
+                // same node!
                 }
-                else {*/
+                else {
+                */
                 countMessage();
-                //} 
+                /*
+                } 
+                */
                 lock.wait();
                 Thread.yield();
             } catch (InterruptedException e) {

@@ -286,6 +286,10 @@ public class ITSkipGraphZen extends SkipGraph {
         int side = (int)((Integer)args.get(SkipGraph.Arg.SIDE));
         int level = l;
        
+       // if (compare((Comparable<?>)getRangeEnd(), (Comparable<?>)0.0) == 0) {
+       //     System.out.println("0.0!!");
+       // }
+        
         if (!m.existsElementAt(l+1)) {
         
         	if (getMaxLevel()>0&& side==R)

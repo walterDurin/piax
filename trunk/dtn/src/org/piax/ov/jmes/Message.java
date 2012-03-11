@@ -4,11 +4,11 @@ import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
 
+import org.piax.gnt.Target;
+import org.piax.gnt.target.RecipientId;
 import org.piax.ov.jmes.von.VON;
 import org.piax.ov.jmes.von.VONObject;
-import org.piax.trans.Target;
 import org.piax.trans.common.PeerId;
-import org.piax.trans.target.RecipientId;
 
 public class Message implements Serializable {
     private static final long serialVersionUID = 5343188220973423656L;

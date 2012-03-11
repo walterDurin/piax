@@ -7,12 +7,12 @@ import java.util.List;
 
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.piax.gnt.handover.Peer;
 import org.piax.ov.jmes.Command;
 import org.piax.ov.jmes.Message;
 import org.piax.ov.jmes.MessageData;
 
 import org.piax.ov.ovs.dtn.DTNAlgorithm;
-import org.piax.trans.Peer;
 import org.piax.trans.common.PeerLocator;
 import org.piax.trans.msgframe.MessageReachable;
 
