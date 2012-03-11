@@ -16,7 +16,7 @@ import org.piax.trans.stat.TrafficInfo;
 import org.piax.trans.tsd.TSD;
 import org.piax.trans.tsd.TSDListener;
 
-public class MobileTransport extends MultiLocatorTransport implements TSDListener, AcceptanceDelegate, PeerManager {
+public class MobileTransport extends HandoverTransport implements TSDListener, AcceptanceDelegate, PeerManager {
     PeerId pid;
     String name;
     List<TSD> tsds;
