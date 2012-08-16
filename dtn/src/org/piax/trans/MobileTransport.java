@@ -15,6 +15,8 @@ import org.piax.trans.stat.LocatorStat;
 import org.piax.trans.stat.TrafficInfo;
 import org.piax.trans.tsd.TSD;
 import org.piax.trans.tsd.TSDListener;
+import org.piax.gnt.handover.PeerManager;
+import org.piax.gnt.handover.Peer;
 
 public class MobileTransport extends HandoverTransport implements TSDListener, AcceptanceDelegate, PeerManager {
     PeerId pid;
@@ -261,7 +263,7 @@ public class MobileTransport extends HandoverTransport implements TSDListener, A
     public void start() throws IOException {
         super.start();
         setDelegate(this);
-        this.trans.getLocatorTransport().setPeerStatManager(this);
+        this.trans.getLocatorTransport().setPeerStatManager((PeerManager)this);
     }
 
     public void addTSD(TSD tsd) {

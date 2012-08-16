@@ -20,9 +20,9 @@ public class SgSim {
         seedOv.putKey(0);
 
         OverlayManager start = null;
-        int searchKey      = 1000000;
-        int startKey       = 9900000;
-        int numberOfNodes = 10000000;
+        int searchKey      = 10000;
+        int startKey       = 99000;
+        int numberOfNodes = 100000;
         log.info("start");
         for (int i = 1; i <= numberOfNodes; i++) {
             SimTransport trans = new SimTransport();
@@ -34,8 +34,8 @@ public class SgSim {
             if (i == startKey) {
                 start = ov;
             }
-            if (i % 100000 == 0) {
-            System.out.println((numberOfNodes - i) / 100000 + " " + ((SimTransport)seedTrans).getElapsedTime() / 1000);
+            if (i % 1000 == 0) {
+            System.out.println(i + " " + ((SimTransport)seedTrans).getElapsedTime() / 1000);
             System.gc();
             }
         }

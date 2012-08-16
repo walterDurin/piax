@@ -9,10 +9,12 @@ import java.util.List;
 
 import org.piax.trans.common.*;
 import org.piax.trans.msgframe.*;
-import org.piax.trans.target.RecipientId;
+import org.piax.gnt.target.RecipientId;
 //import org.piax.trans.ts.LocatorTransportSpi;
 //import org.piax.trans.ts.udp.UdpLocator;
-import org.piax.trans.target.RecipientIdWithLocator;
+import org.piax.gnt.target.RecipientIdWithLocator;
+import org.piax.gnt.SecurityManager;
+import org.piax.gnt.*;
 
 //import android.util.Log;
 

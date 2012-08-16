@@ -105,8 +105,8 @@ public class LocatorTransport extends MessagingRoot
     //    traffic = new TrafficInfo();
     }
     
-    public void setPeerStatManager(PeerManager peerStats) {
-        this.peerStats = peerStats;
+    public void setPeerStatManager(PeerManager peerManager) {
+        this.peerStats = peerManager;
     }
     
     /**
