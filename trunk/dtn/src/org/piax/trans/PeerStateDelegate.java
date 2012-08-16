@@ -1,7 +1,7 @@
 package org.piax.trans;
 
 import org.piax.trans.common.PeerLocator;
-
+import org.piax.gnt.handover.Peer;
 
 /**
  * {@.en An interface to be notified the neighbor node(peer) status.}
