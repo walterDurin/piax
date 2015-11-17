@@ -1,0 +1,3 @@
+PIAX (P2P Interactive Agent eXtensions) is an open source framework that integrates P2P strucutred overlay network and agent platform.
+
+Overlay network enables pervasive devices to communicate each other efficently, while agent platform on the overlay network encourages the devices to cooperate with other devices. Consequently, a scalable and efficient federated system can be realized not only in the ordinary environment but also in a large-scale distributed environment (e.g., pervasive environment, cloud environment) where various kinds of data and processes are located in each device.
